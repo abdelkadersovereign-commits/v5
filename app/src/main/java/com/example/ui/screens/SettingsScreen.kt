@@ -195,38 +195,7 @@ fun SettingsScreen(
                     isPassword = true
                 )
 
-                CyberTextField(
-                    label = if (isAr) "اسم المشروع" else "PROJECT NAME",
-                    value = tempProjectName,
-                    onValueChange = { 
-                        tempProjectName = it
-                        viewModel.updateProjectName(it)
-                    },
-                    isAr = isAr,
-                    isPassword = false
-                )
-
-                CyberTextField(
-                    label = if (isAr) "معرف المشروع" else "PROJECT ID",
-                    value = tempProjectId,
-                    onValueChange = { 
-                        tempProjectId = it
-                        viewModel.updateProjectId(it)
-                    },
-                    isAr = isAr,
-                    isPassword = false
-                )
-
-                CyberTextField(
-                    label = if (isAr) "رقم المشروع" else "PROJECT NUMBER",
-                    value = tempProjectNumber,
-                    onValueChange = { 
-                        tempProjectNumber = it
-                        viewModel.updateProjectNumber(it)
-                    },
-                    isAr = isAr,
-                    isPassword = false
-                )
+                // Project fields removed - AI Studio keys work with API key only
 
                 Button(
                     onClick = { viewModel.testNeuralLink() },
