@@ -314,11 +314,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         // Neural Proxy mode: use alternative endpoint routing with extended timeouts and bypass headers
         val proxyEnabled = _isNeuralProxy.value
         // Always use gemini-1.5-flash (stable). Proxy mode tries multiple endpoints for regional bypass.
-        val endpointUrls = if (proxyEnabled) listOf(
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent",
-            "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent"
-        ) else listOf(
+        // gemini-1.5-flash is ONLY available on v1beta - never v1
+        val endpointUrls = listOf(
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
         )
@@ -347,8 +344,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                         .header("User-Agent", "Dalvik/2.1.0 (Linux; U; Android 14; SM-G998B Build/UP1A.231005.007)")
                         .header("Accept-Language", "en-US,en;q=0.9")
                 }
-                if (_projectId.value.isNotBlank()) requestBuilder.header("x-goog-project-id", _projectId.value)
-                if (_projectNumber.value.isNotBlank()) requestBuilder.header("x-goog-project-number", _projectNumber.value)
+                // Note: AI Studio API keys do NOT require project headers
+                // Only x-goog-api-key is needed for generativelanguage.googleapis.com
 
                 val request = requestBuilder.build()
                 val response = activeClient.newCall(request).execute()
