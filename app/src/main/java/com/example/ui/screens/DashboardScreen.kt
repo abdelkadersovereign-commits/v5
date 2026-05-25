@@ -80,6 +80,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -1733,7 +1734,8 @@ fun TacticalGridButton(
     color: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    subtitle: String = ""
+    subtitle: String = "",
+    shape: Shape = RoundedCornerShape(10.dp)
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "btnGlow")
     val borderAlpha by infiniteTransition.animateFloat(
@@ -1743,10 +1745,10 @@ fun TacticalGridButton(
     )
     Box(
         modifier = modifier
-            .border(1.dp, color.copy(alpha = borderAlpha), RoundedCornerShape(10.dp))
+            .border(1.dp, color.copy(alpha = borderAlpha), shape)
             .background(
                 Brush.verticalGradient(listOf(color.copy(alpha = 0.08f), Color(0xFF010508))),
-                RoundedCornerShape(10.dp)
+                shape
             )
             .clickable(onClick = onClick)
             .padding(vertical = 12.dp, horizontal = 12.dp),
