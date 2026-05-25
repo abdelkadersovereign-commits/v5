@@ -1113,31 +1113,33 @@ fun NeuralModuleTestView(
         if (hasAnsweredCurrent && !isGeneratingDebrief) {
             Spacer(modifier = Modifier.height(18.dp))
             
-            // Phase 25: Regenerate / Refresh Question Button with Cooldown
-            Button(
-                onClick = { triggerQuestionGeneration() },
-                colors = ButtonDefaults.buttonColors(containerColor = AmberZen.copy(alpha = 0.1f)),
-                border = BorderStroke(1.dp, if (cooldownTimer == 0) AmberZen else Color.White.copy(alpha = 0.1f)),
-                shape = RoundedCornerShape(10.dp),
-                enabled = cooldownTimer == 0 && !isGeneratingScenarios,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = if (cooldownTimer > 0) {
-                        if (isAr) "إعادة شحن عصبية ($cooldownTimer)..." else "RECHARGING ($cooldownTimer)..."
-                    } else {
-                        if (isAr) "توليد سؤال جديد ⟳" else "REGENERATE QUESTION ⟳"
-                    },
-                    color = if (cooldownTimer == 0) AmberZen else Color.Gray,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace
-                )
+            // Show "Generate New Questions" ONLY after answering ALL 3 questions
+            val isLastQuestion = currentScenarioIndex + 1 >= scenariosList.size
+            if (isLastQuestion) {
+                Button(
+                    onClick = { triggerQuestionGeneration() },
+                    colors = ButtonDefaults.buttonColors(containerColor = AmberZen.copy(alpha = 0.1f)),
+                    border = BorderStroke(1.dp, if (cooldownTimer == 0) AmberZen else Color.White.copy(alpha = 0.1f)),
+                    shape = RoundedCornerShape(10.dp),
+                    enabled = cooldownTimer == 0 && !isGeneratingScenarios,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                ) {
+                    Text(
+                        text = if (cooldownTimer > 0) {
+                            if (isAr) "جارٍ تحميل أسئلة جديدة ($cooldownTimer)..." else "LOADING NEW QUESTIONS ($cooldownTimer)..."
+                        } else {
+                            if (isAr) "✦ توليد مجموعة أسئلة جديدة" else "✦ GENERATE NEW QUESTION SET"
+                        },
+                        color = if (cooldownTimer == 0) AmberZen else Color.Gray,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
 
             Button(
                 onClick = {
