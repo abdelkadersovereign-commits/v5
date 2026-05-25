@@ -774,10 +774,28 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     // Task 3: Interactive query execution on Gemini. Uses real simulated satellite streaming typewriter visual
-    // Phase 26: sendTerminalQuery() removed to protect API quota
     fun sendTerminalQuery(query: String) {
         if (query.isBlank()) return
-        _terminalResponse.value = if (_isArabic.value) "[ تنبيه ] المحطة العصبية معطلة لتوفير الكوتا. استخدم الأكاديمية فقط." else "[ ALERT ] Terminal AI is disabled for quota protection. Use Academy only."
+        viewModelScope.launch {
+            _isThinking.value = true
+            _terminalResponse.value = if (_isArabic.value) "[ جارٍ الاتصال بالنواة العصبية... ]" else "[ CONNECTING TO NEURAL CORE... ]"
+            try {
+                val isAr = _isArabic.value
+                val sysContext = if (isAr)
+                    "أنت نظام ذكاء اصطناعي للأمن السيبراني باسم A.SYRIA SOVEREIGN OS v4. أجب بأسلوب تقني احترافي وموجز. الاستعلام: $query"
+                else
+                    "You are A.SYRIA SOVEREIGN OS v4 cybersecurity AI assistant. Respond concisely in professional technical style. Query: $query"
+                val result = generateContentSafely(sysContext)
+                _terminalResponse.value = result
+                _isNeuralLinkOffline.value = false
+                addCyberScore(5)
+            } catch (e: Exception) {
+                _terminalResponse.value = "[ TERMINAL ALERT ] :Error\n${e.message}"
+                _isNeuralLinkOffline.value = true
+            } finally {
+                _isThinking.value = false
+            }
+        }
     }
 
     fun generateAcademyScenarios(
@@ -882,10 +900,36 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         onResponse("")
     }
 
-    // Phase 26: analyzeResourceLink() removed to protect API quota
     fun analyzeResourceLink(url: String, resourceTitle: String = "Unknown Reference") {
-        _isAnalyzingLink.value = false
-        _linkAnalysisResult.value = if (_isArabic.value) "الفحص العصبي معطل حالياً لتوفير الطاقة." else "Neural scanning is currently disabled to save quota."
+        viewModelScope.launch {
+            _isAnalyzingLink.value = true
+            _linkAnalysisResult.value = null
+            try {
+                val isAr = _isArabic.value
+                val prompt = if (isAr) {
+                    """أنت محلل أمن سيبراني خبير. حلل هذا الرابط أو المورد: "$url"
+قدم:
+1. ⚠️ تقييم الأمان: آمن / مشبوه / خطير
+2. 🔍 تحليل النطاق والمؤشرات التقنية
+3. 🛡️ توصية للمستخدم
+أجب بالعربية بأسلوب تقني موجز."""
+                } else {
+                    """You are an expert cybersecurity analyst. Analyze this link/resource: "$url"
+Provide:
+1. ⚠️ Security Rating: SAFE / SUSPICIOUS / DANGEROUS
+2. 🔍 Domain & technical indicator analysis
+3. 🛡️ Actionable user recommendation
+Be concise and direct."""
+                }
+                val result = generateContentSafely(prompt)
+                _linkAnalysisResult.value = result
+                addCyberScore(10)
+            } catch (e: Exception) {
+                _linkAnalysisResult.value = "[ SCAN ERROR ]: ${e.message}"
+            } finally {
+                _isAnalyzingLink.value = false
+            }
+        }
     }
 
     fun clearLinkAnalysis() {
