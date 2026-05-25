@@ -18,6 +18,12 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
+    - name: Clean Gradle Cache (prevents stale cache issues)
+      run: |
+        rm -rf ~/.gradle/caches
+        rm -rf ~/.gradle/wrapper/dists
+        echo "Gradle cache cleared."
+
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
       with:
