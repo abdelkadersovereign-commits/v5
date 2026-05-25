@@ -101,6 +101,10 @@ import com.example.ui.theme.GlassWhite
 import com.example.ui.theme.VoidBlack
 import com.example.ui.viewmodel.DashboardViewModel
 import kotlin.random.Random
+import java.util.Calendar
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.PI
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
@@ -215,9 +219,13 @@ fun DashboardScreen(
     // Phase 20: Tactical Document Details
     var selectedVaultIdea by remember { mutableStateOf<InventorIdea?>(null) }
 
+    // Desktop Mode state
+    var isDesktopModeOpen by remember { mutableStateOf(false) }
+
     // Navigation BackHandler logic for sovereign stability
-    BackHandler(enabled = isTerminalExpanded || isForgePanelOpen || isVaultViewOpen || selectedVaultIdea != null) {
+    BackHandler(enabled = isDesktopModeOpen || isTerminalExpanded || isForgePanelOpen || isVaultViewOpen || selectedVaultIdea != null) {
         when {
+            isDesktopModeOpen -> isDesktopModeOpen = false
             selectedVaultIdea != null -> selectedVaultIdea = null
             isTerminalExpanded -> viewModel.setTerminalExpanded(false)
             isForgePanelOpen -> viewModel.setForgePanelOpen(false)
@@ -511,6 +519,28 @@ fun DashboardScreen(
                     }
 
                     item {
+                        // Desktop Mode Button
+                        Button(
+                            onClick = { isDesktopModeOpen = true },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = CyberCyan.copy(alpha = 0.08f)
+                            ),
+                            border = BorderStroke(0.75.dp, CyberCyan.copy(alpha = 0.4f)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = if (isAr) "وضع المكتب" else "DESKTOP MODE",
+                                color = CyberCyan,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = 2.sp
+                            )
+                        }
+                    }
+
+                    item {
                         Spacer(modifier = Modifier.height(12.dp))
                         RadiantDigitalClock(
                             prayerName = nextPrayerName,
@@ -757,30 +787,45 @@ fun DashboardScreen(
                     ) {
                         Column {
                             Text(
-                                text = "THE INVENTOR'S FORGE",
+                                text = "\u0627\u0644\u0645\u0635\u0646\u0639 \u0627\u0644\u0630\u0643\u064A",
                                 color = AmberZen,
-                                fontSize = 18.sp,
+                                fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
-                                letterSpacing = 3.sp,
-                                fontFamily = FontFamily.Monospace
+                                letterSpacing = 1.sp
                             )
                             Text(
-                                text = "COGNITIVE ARCHIVE BLUEPRINT GENERATOR",
+                                text = "\u0623\u0646\u0634\u0626 \u0623\u0641\u0643\u0627\u0631\u0643 \u0648\u0627\u062D\u0641\u0638\u0647\u0627 \u0628\u0623\u0645\u0627\u0646",
                                 color = Color.White.copy(alpha = 0.5f),
-                                fontSize = 8.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                letterSpacing = 1.sp
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
 
                         Text(
-                            text = "[ X ]",
-                            color = Color.White.copy(alpha = 0.5f),
-                            fontSize = 12.sp,
-                            fontFamily = FontFamily.Monospace,
+                            text = "\u2715",
+                            color = Color.White.copy(alpha = 0.6f),
+                            fontSize = 18.sp,
                             modifier = Modifier
                                 .clickable { viewModel.setForgePanelOpen(false) }
                                 .padding(8.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Instruction box
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, AmberZen.copy(alpha = 0.25f), RoundedCornerShape(10.dp))
+                            .background(AmberZen.copy(alpha = 0.06f), RoundedCornerShape(10.dp))
+                            .padding(12.dp)
+                    ) {
+                        Text(
+                            text = "\uD83D\uDCA1 \u0643\u064A\u0641 \u062A\u0633\u062A\u062E\u062F\u0645 \u0627\u0644\u0645\u0635\u0646\u0639: \u0623\u062F\u062E\u0644 \u0627\u0633\u0645 \u0645\u0634\u0631\u0648\u0639\u0643\u060C \u0627\u062E\u062A\u0631 \u0627\u0644\u062A\u0635\u0646\u064A\u0641\u060C \u062B\u0645 \u0627\u0643\u062A\u0628 \u0641\u0643\u0631\u062A\u0643 \u0628\u0627\u0644\u062A\u0641\u0635\u064A\u0644. \u0633\u064A\u0642\u0648\u0645 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064A \u0628\u062A\u062D\u0644\u064A\u0644\u0647\u0627 \u0648\u0625\u0646\u0634\u0627\u0621 \u0645\u062E\u0637\u0637 \u0645\u062A\u0643\u0627\u0645\u0644 \u064A\u064F\u062D\u0641\u0638 \u0641\u064A \u0627\u0644\u062E\u0632\u064A\u0646\u0629.",
+                            color = Color.White.copy(alpha = 0.7f),
+                            fontSize = 11.sp,
+                            lineHeight = 18.sp
                         )
                     }
 
@@ -791,8 +836,9 @@ fun DashboardScreen(
                         value = forgeTitle,
                         onValueChange = { viewModel.updateForgeTitle(it) },
                         modifier = Modifier.fillMaxWidth(),
-                        textStyle = TextStyle(color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace),
-                        label = { Text("PROJECT BLUEPRINT NAME", color = AmberZen.copy(alpha = 0.7f), fontSize = 10.sp, fontFamily = FontFamily.Monospace) },
+                        textStyle = TextStyle(color = Color.White, fontSize = 13.sp),
+                        label = { Text("\u0627\u0633\u0645 \u0627\u0644\u0645\u0634\u0631\u0648\u0639", color = AmberZen.copy(alpha = 0.7f), fontSize = 11.sp) },
+                        placeholder = { Text("\u0645\u062B\u0627\u0644: \u0646\u0638\u0627\u0645 \u062D\u0645\u0627\u064A\u0629 \u0630\u0643\u064A \u0644\u0644\u0645\u0646\u0632\u0644", color = Color.White.copy(alpha = 0.3f), fontSize = 12.sp) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = AmberZen,
                             unfocusedBorderColor = AmberZen.copy(alpha = 0.35f),
@@ -808,9 +854,9 @@ fun DashboardScreen(
                         value = forgeCategory,
                         onValueChange = { viewModel.updateForgeCategory(it) },
                         modifier = Modifier.fillMaxWidth(),
-                        textStyle = TextStyle(color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace),
-                        label = { Text("INNOVATION CATEGORY", color = AmberZen.copy(alpha = 0.7f), fontSize = 10.sp, fontFamily = FontFamily.Monospace) },
-                        placeholder = { Text("e.g. SecOps, GenAI, SpiritualTech", color = Color.White.copy(alpha = 0.3f), fontSize = 11.sp) },
+                        textStyle = TextStyle(color = Color.White, fontSize = 13.sp),
+                        label = { Text("\u0627\u0644\u062A\u0635\u0646\u064A\u0641", color = AmberZen.copy(alpha = 0.7f), fontSize = 11.sp) },
+                        placeholder = { Text("\u0645\u062B\u0627\u0644: \u0623\u0645\u0646 \u0633\u064A\u0628\u0631\u0627\u0646\u064A\u060C \u0630\u0643\u0627\u0621 \u0627\u0635\u0637\u0646\u0627\u0639\u064A\u060C \u062A\u0642\u0646\u064A\u0629 \u0631\u0648\u062D\u0627\u0646\u064A\u0629", color = Color.White.copy(alpha = 0.3f), fontSize = 11.sp) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = AmberZen,
                             unfocusedBorderColor = AmberZen.copy(alpha = 0.35f),
@@ -829,8 +875,8 @@ fun DashboardScreen(
                             .fillMaxWidth()
                             .height(110.dp),
                         textStyle = TextStyle(color = Color.White, fontSize = 13.sp),
-                        label = { Text("RAW INNOVATION CONCEPT", color = AmberZen.copy(alpha = 0.7f), fontSize = 10.sp, fontFamily = FontFamily.Monospace) },
-                        placeholder = { Text("Detail your futuristic blueprint concept here...", color = Color.White.copy(alpha = 0.3f), fontSize = 12.sp) },
+                        label = { Text("\u0648\u0635\u0641 \u0627\u0644\u0641\u0643\u0631\u0629 \u0628\u0627\u0644\u062A\u0641\u0635\u064A\u0644", color = AmberZen.copy(alpha = 0.7f), fontSize = 11.sp) },
+                        placeholder = { Text("\u0627\u0643\u062A\u0628 \u0641\u0643\u0631\u062A\u0643 \u0647\u0646\u0627... \u064A\u0645\u0643\u0646\u0643 \u0648\u0635\u0641 \u0627\u0644\u0645\u0634\u0643\u0644\u0629 \u0627\u0644\u062A\u064A \u062A\u0631\u064A\u062F \u062D\u0644\u0647\u0627 \u0623\u0648 \u0627\u0644\u0627\u0628\u062A\u0643\u0627\u0631 \u0627\u0644\u0630\u064A \u062A\u0631\u064A\u062F \u062A\u0637\u0648\u064A\u0631\u0647", color = Color.White.copy(alpha = 0.3f), fontSize = 12.sp) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = AmberZen,
                             unfocusedBorderColor = AmberZen.copy(alpha = 0.35f),
@@ -858,11 +904,9 @@ fun DashboardScreen(
                         enabled = !isThinking && forgeTitle.isNotBlank() && forgeIdea.isNotBlank()
                     ) {
                         Text(
-                            text = if (isThinking) "TRANSMITTING TO SATELLITE COGNIZANCE..." else "FORGE AND SAVE BLUEPRINT",
+                            text = if (isThinking) "\u062C\u0627\u0631\u064A \u0627\u0644\u062A\u062D\u0644\u064A\u0644 \u0648\u0627\u0644\u0628\u0646\u0627\u0621..." else "\u0625\u0646\u0634\u0627\u0621 \u0648\u062D\u0641\u0638 \u0627\u0644\u0645\u062E\u0637\u0637",
                             fontWeight = FontWeight.Bold,
-                            letterSpacing = 2.sp,
-                            fontSize = 12.sp,
-                            fontFamily = FontFamily.Monospace
+                            fontSize = 14.sp
                         )
                     }
 
@@ -883,28 +927,25 @@ fun DashboardScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "SOVEREIGN_ARCHIVE_UPLINK.dat",
+                                    text = "\u0646\u062A\u064A\u062C\u0629 \u0627\u0644\u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0630\u0643\u064A",
                                     color = AmberZen,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    fontFamily = FontFamily.Monospace
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "ONLINE",
+                                    text = "\u0645\u062A\u0635\u0644",
                                     color = CyberCyan,
-                                    fontSize = 9.sp,
-                                    fontFamily = FontFamily.Monospace
+                                    fontSize = 10.sp
                                 )
                             }
 
                             Spacer(modifier = Modifier.height(10.dp))
 
                             Text(
-                                text = forgeBlueprint.ifEmpty { "TRANSMITTING COGNITIVE PARALLELS FOR DEEP SPACE SECURE COMPILATION..." },
+                                text = forgeBlueprint.ifEmpty { "\u062C\u0627\u0631\u064A \u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0641\u0643\u0631\u0629 \u0648\u0628\u0646\u0627\u0621 \u0627\u0644\u0645\u062E\u0637\u0637..." },
                                 color = Color.White,
-                                fontSize = 11.5.sp,
-                                fontFamily = FontFamily.Monospace,
-                                lineHeight = 17.sp,
+                                fontSize = 12.sp,
+                                lineHeight = 18.sp,
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
@@ -942,7 +983,7 @@ fun DashboardScreen(
                     ) {
                         Column {
                             Text(
-                                text = "THE SECURE VAULT",
+                                text = "الخزينة الآمنة",
                                 color = CyberCyan,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
@@ -950,7 +991,7 @@ fun DashboardScreen(
                                 fontFamily = FontFamily.Monospace
                             )
                             Text(
-                                text = "ENCRYPTED DESIGN BLUEPRINTS",
+                                text = "مخزن أفكارك المشفرة",
                                 color = Color.White.copy(alpha = 0.5f),
                                 fontSize = 8.sp,
                                 fontWeight = FontWeight.SemiBold,
@@ -959,7 +1000,7 @@ fun DashboardScreen(
                         }
 
                         Text(
-                            text = "[ BACK ]",
+                            text = "[ رجوع ]",
                             color = CyberCyan,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
@@ -983,13 +1024,13 @@ fun DashboardScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "ARCHIVE SYMPLEX STATUS: NOMINAL",
+                            text = "الحالة: نشطة ومؤمنة",
                             color = Color.White.copy(alpha = 0.6f),
                             fontSize = 9.sp,
                             fontFamily = FontFamily.Monospace
                         )
                         Text(
-                            text = "${savedIdeas.size} DATA CRYSTALS",
+                            text = "${savedIdeas.size} فكرة محفوظة",
                             color = CyberCyan,
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
@@ -1009,14 +1050,14 @@ fun DashboardScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "⌧",
+                                text = "\uD83D\uDCE6",
                                 color = CyberCyan.copy(alpha = 0.35f),
                                 fontSize = 55.sp,
                                 textAlign = TextAlign.Center
                             )
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = "VAULT ARCHIVE VACANT",
+                                text = "الخزينة فارغة",
                                 color = Color.White,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
@@ -1024,7 +1065,7 @@ fun DashboardScreen(
                                 letterSpacing = 2.sp
                             )
                             Text(
-                                text = "No verified designs in high storage buffers. Navigate back to the main console and forge deep AI structural concepts.",
+                                text = "لم تقم بإنشاء أي مخطط بعد. اذهب إلى المصنع الذكي وابدأ بإنشاء أفكارك وسيتم حفظها هنا بشكل مشفر وآمن.",
                                 color = Color.White.copy(alpha = 0.4f),
                                 fontSize = 10.sp,
                                 textAlign = TextAlign.Center,
@@ -1053,7 +1094,7 @@ fun DashboardScreen(
                     if (savedIdeas.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = "PURGE DATA ARCHIVE",
+                            text = "حذف جميع المحفوظات",
                             color = Color.Red.copy(alpha = 0.6f),
                             fontSize = 10.sp,
                             fontFamily = FontFamily.Monospace,
@@ -1126,7 +1167,7 @@ fun DashboardScreen(
                         .padding(20.dp)
                 ) {
                     Text(
-                        text = "SOVEREIGN CONFIGURATION UNIT",
+                        text = if (isAr) "وحدة الإعدادات" else "SOVEREIGN CONFIGURATION UNIT",
                         color = Color.White,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
@@ -1135,7 +1176,7 @@ fun DashboardScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "A.SYRIA V4 ADVANCED USER CONTROLS",
+                        text = if (isAr) "تحكم متقدم في إعدادات التطبيق" else "A.SYRIA V4 ADVANCED USER CONTROLS",
                         color = CyberCyan.copy(alpha = 0.6f),
                         fontSize = 8.sp,
                         fontFamily = FontFamily.Monospace,
@@ -1178,14 +1219,14 @@ fun DashboardScreen(
                     ) {
                         Column {
                             Text(
-                                text = "STEALTH MODE",
+                                text = if (isAr) "وضع التخفي" else "STEALTH MODE",
                                 color = Color.White,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = FontFamily.Monospace
                             )
                             Text(
-                                text = "Dims global UI & slows celestial drift",
+                                text = if (isAr) "يخفف الإضاءة ويبطئ الحركات" else "Dims global UI & slows celestial drift",
                                 color = Color.White.copy(alpha = 0.5f),
                                 fontSize = 8.5.sp,
                                 fontFamily = FontFamily.Monospace
@@ -1226,14 +1267,14 @@ fun DashboardScreen(
                     ) {
                         Column {
                             Text(
-                                text = "PURGE VAULT ARCHIVE",
+                                text = if (isAr) "مسح الخزينة بالكامل" else "PURGE VAULT ARCHIVE",
                                 color = Color.Red.copy(alpha = 0.8f),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = FontFamily.Monospace
                             )
                             Text(
-                                text = "Irreversibly wipe all forged blueprints",
+                                text = if (isAr) "حذف جميع المخططات المحفوظة نهائياً" else "Irreversibly wipe all forged blueprints",
                                 color = Color.White.copy(alpha = 0.4f),
                                 fontSize = 8.5.sp,
                                 fontFamily = FontFamily.Monospace
@@ -1301,7 +1342,7 @@ fun DashboardScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "CONFIRM VAULT PURGE",
+                                text = if (isAr) "تأكيد مسح الخزينة" else "CONFIRM VAULT PURGE",
                                 color = Color.Red,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
@@ -1309,7 +1350,7 @@ fun DashboardScreen(
                             )
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = "This operation cannot be undone. All encrypted blueprints within the local Room persistence drive will be permanently atomized.",
+                                text = if (isAr) "هذه العملية لا يمكن التراجع عنها. سيتم حذف جميع المخططات المشفرة المحفوظة نهائياً." else "This operation cannot be undone. All encrypted blueprints within the local Room persistence drive will be permanently atomized.",
                                 color = Color.White.copy(alpha = 0.7f),
                                 fontSize = 10.sp,
                                 textAlign = TextAlign.Center,
@@ -1352,6 +1393,18 @@ fun DashboardScreen(
                     }
                 }
             }
+        }
+
+        // Desktop Mode Overlay
+        if (isDesktopModeOpen) {
+            DesktopModeScreen(
+                prayerName = nextPrayerName,
+                prayerTime = nextPrayerTime,
+                prayerCountdown = nextPrayerCountdown,
+                allPrayerTimes = allPrayerTimes,
+                isAr = isAr,
+                onClose = { isDesktopModeOpen = false }
+            )
         }
     }
 }
@@ -1397,7 +1450,7 @@ fun BlueprintEngineeringCard(
         ) {
             Column {
                 Text(
-                    text = "BLUEPRINT: ${title.uppercase()}",
+                    text = "\uD83D\uDCCB $title",
                     color = CyberCyan,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
@@ -1406,7 +1459,7 @@ fun BlueprintEngineeringCard(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "CLASSIFICATION: $category // STATUS: ARCHIVED",
+                    text = "التصنيف: $category \u2022 محفوظ بأمان",
                     color = Color.White.copy(alpha = 0.5f),
                     fontSize = 9.sp,
                     fontFamily = FontFamily.Monospace
@@ -1764,9 +1817,9 @@ fun BackgroundParticles(
         val width = size.width
         val height = size.height
 
-        particles.forEach { p ->
+        // Pre-calculate all particle positions for connection lines
+        val positions = particles.map { p ->
             val driftFactor = if (stateType == ContextualVerseEngine.AmbientStateType.HIGH_PERFORMANCE) {
-                // Directional "data stream" active effect downward
                 autoOffset * (p.size * 0.6f + 0.4f)
             } else {
                 autoOffset * 0.25f
@@ -1778,11 +1831,36 @@ fun BackgroundParticles(
             if (px < 0) px += width
             if (py < 0) py += height
 
+            Offset(px, py) to p
+        }
+
+        // Draw particles
+        positions.forEach { (offset, p) ->
             drawCircle(
                 color = baseColor.copy(alpha = p.opacity),
                 radius = p.size,
-                center = Offset(px, py)
+                center = offset
             )
+        }
+
+        // Draw neural network connection lines between nearby particles
+        for (i in positions.indices) {
+            for (j in i + 1 until positions.size) {
+                val (posA, pA) = positions[i]
+                val (posB, pB) = positions[j]
+                val dx = posA.x - posB.x
+                val dy = posA.y - posB.y
+                val distance = kotlin.math.sqrt(dx * dx + dy * dy)
+                if (distance < 120f) {
+                    val lineAlpha = ((1f - distance / 120f) * 0.15f) * ((pA.opacity + pB.opacity) / 2f)
+                    drawLine(
+                        color = baseColor.copy(alpha = lineAlpha),
+                        start = posA,
+                        end = posB,
+                        strokeWidth = 0.5f
+                    )
+                }
+            }
         }
     }
 }
@@ -2164,11 +2242,11 @@ fun NeuralVerseModule(verse: String, easing: CubicBezierEasing, onTap: () -> Uni
         Spacer(modifier = Modifier.height(2.dp))
         
         Text(
-            text = "TAP TO ROTATE HOLY VERSE",
+            text = "اضغط لتغيير الآية",
             color = Color.White.copy(alpha = 0.3f),
-            fontSize = 8.sp,
+            fontSize = 9.sp,
             fontWeight = FontWeight.Bold,
-            letterSpacing = 2.sp,
+            letterSpacing = 1.sp,
             textAlign = TextAlign.Center
         )
     }
@@ -2397,6 +2475,11 @@ fun RadiantDigitalClock(
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Embedded Analog Clock
+            AnalogClock(size = 120)
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -2701,3 +2784,371 @@ fun CyberRankMetricBar(
     }
 }
 
+// ==========================================
+// ANALOG CLOCK COMPOSABLE
+// ==========================================
+@Composable
+fun AnalogClock(size: Int = 200) {
+    var hour by remember { mutableStateOf(0) }
+    var minute by remember { mutableStateOf(0) }
+    var second by remember { mutableStateOf(0) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            val cal = Calendar.getInstance()
+            hour = cal.get(Calendar.HOUR)
+            minute = cal.get(Calendar.MINUTE)
+            second = cal.get(Calendar.SECOND)
+            kotlinx.coroutines.delay(1000)
+        }
+    }
+
+    val sizeDp = size.dp
+    val infiniteTransition = rememberInfiniteTransition(label = "clockGlow")
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.4f, targetValue = 0.8f,
+        animationSpec = infiniteRepeatable(tween(2000, easing = LinearEasing), RepeatMode.Reverse),
+        label = "clockGlowAlpha"
+    )
+
+    Canvas(modifier = Modifier.size(sizeDp)) {
+        val centerX = this.size.width / 2f
+        val centerY = this.size.height / 2f
+        val radius = minOf(centerX, centerY) * 0.88f
+
+        // Outer glow ring
+        drawCircle(
+            color = CyberCyan.copy(alpha = 0.08f * glowAlpha),
+            radius = radius * 1.08f,
+            center = Offset(centerX, centerY)
+        )
+
+        // Clock face border
+        drawCircle(
+            color = CyberCyan.copy(alpha = 0.35f),
+            radius = radius,
+            center = Offset(centerX, centerY),
+            style = Stroke(width = 2f)
+        )
+
+        // Inner subtle fill
+        drawCircle(
+            color = CyberCyan.copy(alpha = 0.06f),
+            radius = radius * 0.95f,
+            center = Offset(centerX, centerY)
+        )
+
+        // Tick marks (60 minute ticks, 12 hour ticks)
+        for (i in 0 until 60) {
+            val angle = (i * 6f) - 90f
+            val isHourMark = i % 5 == 0
+            val tickStart = if (isHourMark) radius * 0.78f else radius * 0.88f
+            val tickEnd = radius * 0.95f
+            val tickColor = if (isHourMark) CyberCyan.copy(alpha = 0.7f) else CyberCyan.copy(alpha = 0.2f)
+            val tickWidth = if (isHourMark) 2.5f else 1f
+            val rad = angle * PI.toFloat() / 180f
+            drawLine(
+                color = tickColor,
+                start = Offset(centerX + cos(rad) * tickStart, centerY + sin(rad) * tickStart),
+                end = Offset(centerX + cos(rad) * tickEnd, centerY + sin(rad) * tickEnd),
+                strokeWidth = tickWidth,
+                cap = StrokeCap.Round
+            )
+        }
+
+        // Hour hand (short, thick)
+        val hourAngle = ((hour % 12) * 30f + minute * 0.5f) - 90f
+        val hourRad = hourAngle * PI.toFloat() / 180f
+        drawLine(
+            color = CyberCyan.copy(alpha = 0.9f),
+            start = Offset(centerX, centerY),
+            end = Offset(centerX + cos(hourRad) * radius * 0.5f, centerY + sin(hourRad) * radius * 0.5f),
+            strokeWidth = 4f,
+            cap = StrokeCap.Round
+        )
+
+        // Minute hand (longer, medium)
+        val minuteAngle = (minute * 6f + second * 0.1f) - 90f
+        val minuteRad = minuteAngle * PI.toFloat() / 180f
+        drawLine(
+            color = CyberCyan.copy(alpha = 0.8f),
+            start = Offset(centerX, centerY),
+            end = Offset(centerX + cos(minuteRad) * radius * 0.7f, centerY + sin(minuteRad) * radius * 0.7f),
+            strokeWidth = 2.5f,
+            cap = StrokeCap.Round
+        )
+
+        // Second hand (longest, thinnest, AmberZen)
+        val secondAngle = (second * 6f) - 90f
+        val secondRad = secondAngle * PI.toFloat() / 180f
+        drawLine(
+            color = AmberZen.copy(alpha = 0.9f),
+            start = Offset(centerX - cos(secondRad) * radius * 0.15f, centerY - sin(secondRad) * radius * 0.15f),
+            end = Offset(centerX + cos(secondRad) * radius * 0.82f, centerY + sin(secondRad) * radius * 0.82f),
+            strokeWidth = 1.2f,
+            cap = StrokeCap.Round
+        )
+
+        // Center dot
+        drawCircle(color = AmberZen, radius = 3.5f, center = Offset(centerX, centerY))
+        drawCircle(
+            color = CyberCyan.copy(alpha = 0.5f),
+            radius = 6f,
+            center = Offset(centerX, centerY),
+            style = Stroke(width = 1f)
+        )
+    }
+}
+
+// ==========================================
+// DESKTOP MODE SCREEN COMPOSABLE
+// ==========================================
+@Composable
+fun DesktopModeScreen(
+    prayerName: String,
+    prayerTime: String,
+    prayerCountdown: String,
+    allPrayerTimes: Map<String, String>,
+    isAr: Boolean,
+    onClose: () -> Unit
+) {
+    val calendar = Calendar.getInstance()
+    val dayNames = listOf("الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت")
+    val monthNames = listOf("يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر")
+
+    val dayOfWeek = dayNames[calendar.get(Calendar.DAY_OF_WEEK) - 1]
+    val dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH)
+    val monthName = monthNames[calendar.get(Calendar.MONTH)]
+    val year = calendar.get(Calendar.YEAR)
+    val dateString = "$dayOfWeek  $dayOfMonth $monthName $year"
+
+    // Approximate Hijri date
+    val hijriMonths = listOf("محرم", "صفر", "ربيع الأول", "ربيع الثاني", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة")
+    val epochMillis = calendar.timeInMillis
+    val hijriDaysSinceEpoch = ((epochMillis / 86400000L) - 10643) // Approximate offset from Unix epoch to Hijri
+    val hijriCycleYears = (hijriDaysSinceEpoch / 10631L) * 30L
+    val remainingDays = hijriDaysSinceEpoch % 10631L
+    val hijriYear = (hijriCycleYears + (remainingDays / 354L) + 1).toInt()
+    val hijriDayInYear = (remainingDays % 354L).toInt()
+    val hijriMonth = (hijriDayInYear / 29).coerceIn(0, 11)
+    val hijriDay = (hijriDayInYear % 29) + 1
+    val hijriString = "$hijriDay ${hijriMonths[hijriMonth]} $hijriYear هـ"
+
+    val arabicPrayerName = prayerNameToArabic(prayerName)
+
+    // Animated background gradient
+    val infiniteTransition = rememberInfiniteTransition(label = "desktopBg")
+    val gradientShift by infiniteTransition.animateFloat(
+        initialValue = 0f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(8000, easing = LinearEasing), RepeatMode.Reverse),
+        label = "gradShift"
+    )
+    val pulseBright by infiniteTransition.animateFloat(
+        initialValue = 0.5f, targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(tween(2200, easing = LinearEasing), RepeatMode.Reverse),
+        label = "pulseBright"
+    )
+
+    val bgColor1 = Color(0xFF001220)
+    val bgColor2 = Color(0xFF000A14)
+    val bgColor3 = Color(0xFF001A2C)
+
+    // Particle state for ambient effect
+    val particles = remember {
+        List(40) {
+            SpaceParticle(
+                x = Random.nextFloat(),
+                y = Random.nextFloat(),
+                size = Random.nextFloat() * 2f + 0.5f,
+                opacity = Random.nextFloat() * 0.4f + 0.1f
+            )
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        bgColor1,
+                        bgColor2.copy(alpha = 0.5f + gradientShift * 0.3f),
+                        bgColor3
+                    )
+                )
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        // Ambient particles
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            particles.forEach { p ->
+                val px = p.x * this.size.width
+                val py = (p.y + gradientShift * 0.02f) % 1f * this.size.height
+                drawCircle(
+                    color = CyberCyan.copy(alpha = p.opacity * pulseBright),
+                    radius = p.size.dp.toPx(),
+                    center = Offset(px, py)
+                )
+            }
+        }
+
+        // Close button (top corner)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(16.dp),
+            contentAlignment = Alignment.TopStart
+        ) {
+            IconButton(onClick = onClose) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Close",
+                    tint = CyberCyan
+                )
+            }
+        }
+
+        // Main content
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // Large Analog Clock
+            AnalogClock(size = 220)
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Gregorian date
+            Text(
+                text = dateString,
+                color = CyberCyan.copy(alpha = 0.85f),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Light,
+                textAlign = TextAlign.Center,
+                style = TextStyle(
+                    shadow = androidx.compose.ui.graphics.Shadow(
+                        color = CyberCyan.copy(alpha = 0.4f),
+                        blurRadius = 12f
+                    )
+                )
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Hijri date
+            Text(
+                text = hijriString,
+                color = AmberZen.copy(alpha = 0.7f),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Light,
+                textAlign = TextAlign.Center,
+                style = TextStyle(
+                    shadow = androidx.compose.ui.graphics.Shadow(
+                        color = AmberZen.copy(alpha = 0.3f),
+                        blurRadius = 8f
+                    )
+                )
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // Next Prayer Countdown (prominent)
+            Text(
+                text = if (isAr) "الصلاة القادمة" else "NEXT PRAYER",
+                color = CyberCyan.copy(alpha = 0.5f),
+                fontSize = 10.sp,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 2.sp
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = arabicPrayerName,
+                color = AmberZen.copy(alpha = pulseBright),
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Light,
+                style = TextStyle(
+                    shadow = androidx.compose.ui.graphics.Shadow(
+                        color = AmberZen.copy(alpha = 0.5f),
+                        blurRadius = 20f
+                    )
+                )
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = prayerTime,
+                color = CyberCyan.copy(alpha = 0.8f),
+                fontSize = 20.sp,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 2.sp
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .background(AmberZen.copy(alpha = pulseBright), RoundedCornerShape(50))
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = prayerCountdown,
+                    color = AmberZen.copy(alpha = 0.9f),
+                    fontSize = 16.sp,
+                    fontFamily = FontFamily.Monospace,
+                    letterSpacing = 1.sp
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = if (isAr) "متبقي" else "REMAINING",
+                    color = CyberCyan.copy(alpha = 0.4f),
+                    fontSize = 9.sp,
+                    fontFamily = FontFamily.Monospace
+                )
+            }
+
+            Spacer(modifier = Modifier.height(30.dp))
+
+            // All Prayer Times
+            if (allPrayerTimes.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.85f)
+                        .background(Color.White.copy(alpha = 0.03f), RoundedCornerShape(12.dp))
+                        .border(0.5.dp, CyberCyan.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                        .padding(16.dp)
+                ) {
+                    val prayerList = listOf("الفجر", "الشروق", "الظهر", "العصر", "المغرب", "العشاء")
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // Row 1
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            prayerList.take(3).forEach { name ->
+                                PrayerItem(name, allPrayerTimes[name] ?: "--:--", isAr, name == arabicPrayerName)
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(14.dp))
+                        // Row 2
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            prayerList.drop(3).forEach { name ->
+                                PrayerItem(name, allPrayerTimes[name] ?: "--:--", isAr, name == arabicPrayerName)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
