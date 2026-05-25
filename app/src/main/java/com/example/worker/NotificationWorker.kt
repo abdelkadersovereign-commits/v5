@@ -34,7 +34,7 @@ class NotificationWorker(context: Context, params: WorkerParameters) : Coroutine
         // 2. Gemini Security Alert (if API key available)
         if (apiKey.isNotEmpty() && apiKey != "MY_GEMINI_API_KEY") {
             try {
-                val model = GenerativeModel(modelName = "gemini-1.5-flash", apiKey = apiKey)
+                val model = GenerativeModel(modelName = "gemini-2.5-flash-lite", apiKey = apiKey)
                 val promptLocale = if (isAr) "Arabic" else "English"
                 val prompt = "Provide one very brief (12 words max) high-priority cybersecurity tip in $promptLocale. Be direct. No intro."
                 val res = model.generateContent(prompt).text ?: ""
@@ -129,10 +129,16 @@ class NotificationWorker(context: Context, params: WorkerParameters) : Coroutine
                 vibrationPattern = longArrayOf(0, 300, 100, 300, 100, 500)
                 enableLights(true)
                 lightColor = android.graphics.Color.CYAN
+                val soundUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
+                setSound(soundUri, android.media.AudioAttributes.Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build())
             }
             notificationManager.createNotificationChannel(channel)
         }
 
+        val soundUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
         val notification = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(android.R.drawable.stat_sys_warning)
             .setContentTitle(title)
@@ -141,6 +147,8 @@ class NotificationWorker(context: Context, params: WorkerParameters) : Coroutine
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setSound(soundUri)
+            .setVibrate(longArrayOf(0, 300, 100, 300, 100, 500))
             .setAutoCancel(true)
             .build()
 
