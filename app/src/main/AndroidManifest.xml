@@ -32,14 +32,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!-- Desktop Mode Activity - Fullscreen Landscape -->
-        <activity
-            android:name="com.example.DesktopModeActivity"
-            android:screenOrientation="landscape"
-            android:configChanges="orientation|screenSize"
-            android:theme="@style/Theme.MyApplication"
-            android:exported="false" />
     </application>
 
 </manifest>
