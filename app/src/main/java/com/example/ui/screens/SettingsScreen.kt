@@ -237,27 +237,29 @@ fun SettingsScreen(
                     icon = Icons.Default.Language
                 )
 
-                SettingsToggle(
-                    label = if (isAr) "وضع التخفي" else "Stealth Mode",
-                    checked = isStealth,
-                    onCheckedChange = { 
-                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-                        viewModel.setStealthMode(it) 
-                    },
-                    icon = if (isStealth) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                    tint = if (isStealth) Color.Gray else CyberCyan
-                )
-
-                SettingsToggle(
-                    label = if (isAr) "Neural Proxy (تجاوز الحظر)" else "Neural Proxy Bypass",
-                    checked = isNeuralProxy,
-                    onCheckedChange = { 
-                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-                        viewModel.setNeuralProxy(it) 
-                    },
-                    icon = Icons.Default.Security,
-                    tint = if (isNeuralProxy) CyberCyan else Color.White
-                )
+                // Auto-bypass is built-in via DoH DNS — no manual proxy toggle needed
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                        .border(1.dp, CyberCyan.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                        .background(CyberCyan.copy(alpha = 0.04f), RoundedCornerShape(8.dp))
+                        .padding(12.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Default.Shield, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(16.dp))
+                        Text(
+                            text = if (isAr)
+                                "الاتصال محمي تلقائياً — تجاوز المناطق المحظورة مدمج في النظام بدون VPN"
+                            else
+                                "Auto-protected connection — Regional bypass built-in, no VPN required",
+                            color = CyberCyan.copy(alpha = 0.8f),
+                            fontSize = 10.sp,
+                            lineHeight = 14.sp,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(24.dp))
                 
@@ -288,6 +290,14 @@ fun SettingsScreen(
                 // Section: Data Management
                 SettingsSectionHeader(if (isAr) "إدارة البيانات" else "DATA MANAGEMENT")
                 
+                Text(
+                    text = if (isAr) "⚠️ يحذف جميع الأفكار المحفوظة في السجل بشكل نهائي ولا يمكن التراجع عنه."
+                           else "⚠️ Permanently deletes all saved records. This action cannot be undone.",
+                    color = Color.Red.copy(alpha = 0.6f),
+                    fontSize = 10.sp,
+                    lineHeight = 14.sp,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                )
                 Button(
                     onClick = { 
                         haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
@@ -298,8 +308,10 @@ fun SettingsScreen(
                     border = BorderStroke(1.dp, Color.Red.copy(alpha = 0.5f)),
                     shape = RoundedCornerShape(8.dp)
                 ) {
+                    Icon(Icons.Default.DeleteForever, contentDescription = null, tint = Color.Red, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (isAr) "تطهير القبو العصبي" else "PURGE NEURAL VAULT",
+                        text = if (isAr) "حذف جميع البيانات المحفوظة" else "DELETE ALL SAVED DATA",
                         color = Color.Red,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -310,7 +322,7 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(40.dp))
                 
                 Text(
-                    text = "A.SYRIA V4 | SOVEREIGN OS v4.0.0",
+                    text = "A.SYRIA | SOVEREIGN OS v5.0.0",
                     color = Color.White.copy(alpha = 0.3f),
                     fontSize = 10.sp,
                     modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -324,7 +336,7 @@ fun SettingsScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "A.SYRIA SOVEREIGN OS v4.0.0 | SECURE BUILD",
+                    text = "A.SYRIA SOVEREIGN OS v5.0.0 | SECURE BUILD",
                     color = Color.White.copy(alpha = 0.3f),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
