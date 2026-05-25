@@ -25,10 +25,14 @@ android {
     applicationId = "com.asyria.v4"
     minSdk = 26
     targetSdk = 34
-    versionCode = 4
-    versionName = "4.0.0"
+    versionCode = 5
+    versionName = "5.0.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+    ndk {
+      abiFilters += setOf("arm64-v8a")
+    }
   }
 
   signingConfigs {
@@ -109,13 +113,7 @@ dependencies {
   implementation(libs.androidx.compose.ui.graphics)
   implementation(libs.androidx.compose.ui.tooling.preview)
   implementation("com.squareup.okhttp3:okhttp:4.12.0")
-  implementation("org.tensorflow:tensorflow-lite:2.14.0")
-  implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
-  implementation("org.tensorflow:tensorflow-lite-metadata:0.4.4")
-  implementation("com.google.mlkit:translate:17.0.2")
   implementation("com.google.mlkit:language-id:17.0.5")
-  implementation("androidx.media3:media3-exoplayer:1.3.1")
-  implementation("androidx.media3:media3-ui:1.3.1")
   implementation("com.airbnb.android:lottie-compose:6.4.0")
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.datastore.preferences)
