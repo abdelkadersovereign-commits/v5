@@ -313,11 +313,10 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
         // Neural Proxy mode: use alternative endpoint routing with extended timeouts and bypass headers
         val proxyEnabled = _isNeuralProxy.value
-        // Always use gemini-1.5-flash (stable). Proxy mode tries multiple endpoints for regional bypass.
-        // gemini-1.5-flash is ONLY available on v1beta - never v1
+        // gemini-2.0-flash is the current stable model (gemini-1.5-flash deprecated)
         val endpointUrls = listOf(
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent"
         )
 
         val activeClient = if (proxyEnabled) {
