@@ -80,7 +80,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -212,7 +211,6 @@ fun DashboardScreen(
     val neuralRole by viewModel.neuralRole.collectAsState()
 
     val isNeuralLinkOffline by viewModel.isNeuralLinkOffline.collectAsState()
-    val hasInternetConnection by viewModel.hasInternetConnection.collectAsState()
     val linkAnalysisResult by viewModel.linkAnalysisResult.collectAsState()
     val isAnalyzingLink by viewModel.isAnalyzingLink.collectAsState()
 
@@ -221,9 +219,13 @@ fun DashboardScreen(
     // Phase 20: Tactical Document Details
     var selectedVaultIdea by remember { mutableStateOf<InventorIdea?>(null) }
 
+    // Desktop Mode state
+    var isDesktopModeOpen by remember { mutableStateOf(false) }
+
     // Navigation BackHandler logic for sovereign stability
-    BackHandler(enabled = isTerminalExpanded || isForgePanelOpen || isVaultViewOpen || selectedVaultIdea != null) {
+    BackHandler(enabled = isDesktopModeOpen || isTerminalExpanded || isForgePanelOpen || isVaultViewOpen || selectedVaultIdea != null) {
         when {
+            isDesktopModeOpen -> isDesktopModeOpen = false
             selectedVaultIdea != null -> selectedVaultIdea = null
             isTerminalExpanded -> viewModel.setTerminalExpanded(false)
             isForgePanelOpen -> viewModel.setForgePanelOpen(false)
@@ -287,13 +289,13 @@ fun DashboardScreen(
         isStealthMode -> listOf(VoidBlack, Color(0xFF030508))
         stateType == ContextualVerseEngine.AmbientStateType.CRITICAL -> listOf(Color(0xFF1B0701), VoidBlack)
         stateType == ContextualVerseEngine.AmbientStateType.HIGH_PERFORMANCE -> listOf(Color(0xFF001B26), VoidBlack)
-        !hasInternetConnection -> listOf(Color(0xFF1A0E00), VoidBlack) // warm tone when offline
+        isNeuralLinkOffline -> listOf(Color(0xFF1A0E00), VoidBlack) // warm tone when offline
         else -> listOf(Color(0xFF001520), VoidBlack) // cool blue tone when online
     }
 
     // Connection-aware dynamic accent: Blue when ONLINE, Orange when OFFLINE
     val dynamicAccent by animateColorAsState(
-        targetValue = if (!hasInternetConnection) AmberZen else CyberCyan,
+        targetValue = if (isNeuralLinkOffline) AmberZen else CyberCyan,
         animationSpec = tween(800),
         label = "dynamicAccent"
     )
@@ -359,7 +361,7 @@ fun DashboardScreen(
                     // Connection-aware status pill (blue when online, orange when offline)
                     item {
                         ConnectionStatusPill(
-                            isOnline = hasInternetConnection,
+                            isOnline = !isNeuralLinkOffline,
                             accent = dynamicAccent,
                             isAr = isAr
                         )
@@ -534,25 +536,19 @@ fun DashboardScreen(
                     }
 
                     item {
-                        // Desktop Mode Button - Launches fullscreen landscape activity
+                        // Desktop Mode Button
                         Button(
-                            onClick = {
-                                val intent = Intent(context, com.example.DesktopModeActivity::class.java).apply {
-                                    putExtra("is_ar", isAr)
-                                    putExtra("is_online", hasInternetConnection)
-                                }
-                                context.startActivity(intent)
-                            },
+                            onClick = { isDesktopModeOpen = true },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = dynamicAccent.copy(alpha = 0.08f)
+                                containerColor = CyberCyan.copy(alpha = 0.08f)
                             ),
-                            border = BorderStroke(0.75.dp, dynamicAccent.copy(alpha = 0.4f)),
+                            border = BorderStroke(0.75.dp, CyberCyan.copy(alpha = 0.4f)),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
-                                text = if (isAr) "🖥️ وضع المكتب" else "🖥️ DESKTOP MODE",
-                                color = dynamicAccent,
+                                text = if (isAr) "وضع المكتب" else "DESKTOP MODE",
+                                color = CyberCyan,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = FontFamily.Monospace,
@@ -1415,6 +1411,19 @@ fun DashboardScreen(
                 }
             }
         }
+
+        // Desktop Mode Overlay
+        if (isDesktopModeOpen) {
+            DesktopModeScreen(
+                prayerName = nextPrayerName,
+                prayerTime = nextPrayerTime,
+                prayerCountdown = nextPrayerCountdown,
+                allPrayerTimes = allPrayerTimes,
+                isAr = isAr,
+                isOnline = !isNeuralLinkOffline,
+                onClose = { isDesktopModeOpen = false }
+            )
+        }
     }
 }
 
@@ -1734,8 +1743,7 @@ fun TacticalGridButton(
     color: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    subtitle: String = "",
-    shape: Shape = RoundedCornerShape(10.dp)
+    subtitle: String = ""
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "btnGlow")
     val borderAlpha by infiniteTransition.animateFloat(
@@ -1745,10 +1753,10 @@ fun TacticalGridButton(
     )
     Box(
         modifier = modifier
-            .border(1.dp, color.copy(alpha = borderAlpha), shape)
+            .border(1.dp, color.copy(alpha = borderAlpha), RoundedCornerShape(10.dp))
             .background(
                 Brush.verticalGradient(listOf(color.copy(alpha = 0.08f), Color(0xFF010508))),
-                shape
+                RoundedCornerShape(10.dp)
             )
             .clickable(onClick = onClick)
             .padding(vertical = 12.dp, horizontal = 12.dp),
@@ -3351,439 +3359,6 @@ fun ConnectionStatusPill(
                     blurRadius = 10f
                 )
             )
-        )
-    }
-}
-
-// ==========================================
-// DESKTOP MODE FULLSCREEN COMPOSABLE
-// Optimized for landscape orientation with fullscreen prayer times display
-// ==========================================
-@Composable
-fun DesktopModeFullScreen(
-    prayerViewModel: com.example.ui.viewmodel.PrayerViewModel,
-    isAr: Boolean,
-    isOnline: Boolean,
-    onClose: () -> Unit
-) {
-    val nextPrayerName by prayerViewModel.nextPrayerName.collectAsState()
-    val nextPrayerTime by prayerViewModel.nextPrayerTime.collectAsState()
-    val nextPrayerCountdown by prayerViewModel.nextPrayerCountdown.collectAsState()
-    val allPrayerTimes by prayerViewModel.allPrayerTimes.collectAsState()
-
-    val calendar = Calendar.getInstance()
-    val dayNames = listOf("الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت")
-    val monthNames = listOf("يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر")
-
-    val dayOfWeek = dayNames[calendar.get(Calendar.DAY_OF_WEEK) - 1]
-    val dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH)
-    val monthName = monthNames[calendar.get(Calendar.MONTH)]
-    val year = calendar.get(Calendar.YEAR)
-    val dateString = "$dayOfWeek  $dayOfMonth $monthName $year"
-
-    // Hijri date calculation
-    val hijriMonths = listOf("محرم", "صفر", "ربيع الأول", "ربيع الثاني", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة")
-    val epochMillis = calendar.timeInMillis
-    val hijriDaysSinceEpoch = ((epochMillis / 86400000L) - 10643)
-    val hijriCycleYears = (hijriDaysSinceEpoch / 10631L) * 30L
-    val remainingDays = hijriDaysSinceEpoch % 10631L
-    val hijriYear = (hijriCycleYears + (remainingDays / 354L) + 1).toInt()
-    val hijriDayInYear = (remainingDays % 354L).toInt()
-    val hijriMonth = (hijriDayInYear / 29).coerceIn(0, 11)
-    val hijriDay = (hijriDayInYear % 29) + 1
-    val hijriString = "$hijriDay ${hijriMonths[hijriMonth]} $hijriYear هـ"
-
-    val arabicPrayerName = prayerNameToArabic(nextPrayerName)
-    val accentColor = if (isOnline) CyberCyan else AmberZen
-
-    // Live digital time
-    var currentTime by remember { mutableStateOf(getCurrentTimeFormatted()) }
-    var currentSeconds by remember { mutableStateOf(getCurrentSecondsFormatted()) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            currentTime = getCurrentTimeFormatted()
-            currentSeconds = getCurrentSecondsFormatted()
-            kotlinx.coroutines.delay(1000)
-        }
-    }
-
-    // Animations
-    val infiniteTransition = rememberInfiniteTransition(label = "fullscreenDesktop")
-    val pulseBright by infiniteTransition.animateFloat(
-        initialValue = 0.65f, targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(tween(2200, easing = LinearEasing), RepeatMode.Reverse),
-        label = "pulseBright"
-    )
-    val ringRotation by infiniteTransition.animateFloat(
-        initialValue = 0f, targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(45000, easing = LinearEasing), RepeatMode.Restart),
-        label = "ringRotation"
-    )
-    val ambientShift by infiniteTransition.animateFloat(
-        initialValue = 0f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(12000, easing = LinearEasing), RepeatMode.Reverse),
-        label = "ambientShift"
-    )
-
-    val particles = remember {
-        List(80) {
-            SpaceParticle(
-                x = Random.nextFloat(),
-                y = Random.nextFloat(),
-                size = Random.nextFloat() * 2.2f + 0.5f,
-                opacity = Random.nextFloat() * 0.6f + 0.15f
-            )
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF000308))
-    ) {
-        // Background gradient
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            accentColor.copy(alpha = 0.12f),
-                            Color(0xFF030812),
-                            Color(0xFF000204)
-                        ),
-                        radius = 2400f
-                    )
-                )
-        )
-
-        // Ambient particles
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            particles.forEach { p ->
-                val px = p.x * size.width
-                val py = ((p.y + ambientShift * 0.05f) % 1f) * size.height
-                drawCircle(
-                    color = accentColor.copy(alpha = p.opacity * pulseBright * 0.75f),
-                    radius = p.size.dp.toPx(),
-                    center = Offset(px, py)
-                )
-            }
-        }
-
-        // Border frame
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .border(
-                    width = 1.dp,
-                    brush = Brush.verticalGradient(
-                        listOf(
-                            accentColor.copy(alpha = 0.55f),
-                            Color.Transparent,
-                            accentColor.copy(alpha = 0.55f)
-                        )
-                    )
-                )
-        )
-
-        // Close button + Status
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .align(Alignment.TopCenter),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onClose) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Close",
-                    tint = accentColor
-                )
-            }
-            Row(
-                modifier = Modifier
-                    .border(0.75.dp, accentColor.copy(alpha = 0.6f), RoundedCornerShape(50))
-                    .background(accentColor.copy(alpha = 0.1f), RoundedCornerShape(50))
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .background(accentColor.copy(alpha = pulseBright), RoundedCornerShape(50))
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = if (isOnline) (if (isAr) "متصل" else "ONLINE") else (if (isAr) "غير متصل" else "OFFLINE"),
-                    color = accentColor,
-                    fontSize = 11.sp,
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp
-                )
-            }
-        }
-
-        // Main content - Landscape optimized
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 48.dp, vertical = 32.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Left section: Large digital clock
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Box(
-                    modifier = Modifier.size(320.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val radius = size.minDimension / 2f - 8f
-                        val center = Offset(size.width / 2f, size.height / 2f)
-                        
-                        // Rotating outer ring
-                        rotate(ringRotation, pivot = center) {
-                            drawCircle(
-                                color = accentColor.copy(alpha = 0.22f),
-                                radius = radius,
-                                center = center,
-                                style = Stroke(width = 1.2f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 18f), 0f))
-                            )
-                        }
-                        
-                        // Inner static ring
-                        drawCircle(
-                            color = accentColor.copy(alpha = 0.4f),
-                            radius = radius - 24f,
-                            center = center,
-                            style = Stroke(width = 0.8f)
-                        )
-                        
-                        // Glow halo
-                        drawCircle(
-                            color = accentColor.copy(alpha = 0.1f * pulseBright),
-                            radius = radius - 38f,
-                            center = center
-                        )
-                    }
-                    
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = currentTime,
-                            color = accentColor,
-                            fontSize = 78.sp,
-                            fontWeight = FontWeight.ExtraLight,
-                            fontFamily = FontFamily.Monospace,
-                            letterSpacing = 5.sp,
-                            style = TextStyle(
-                                shadow = androidx.compose.ui.graphics.Shadow(
-                                    color = accentColor.copy(alpha = 0.6f),
-                                    blurRadius = 32f
-                                )
-                            )
-                        )
-                        Text(
-                            text = currentSeconds,
-                            color = accentColor.copy(alpha = 0.6f),
-                            fontSize = 16.sp,
-                            fontFamily = FontFamily.Monospace,
-                            letterSpacing = 8.sp
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Date information
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = dateString,
-                        color = Color.White.copy(alpha = 0.9f),
-                        fontSize = 19.sp,
-                        fontWeight = FontWeight.Light,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = hijriString,
-                        color = AmberZen.copy(alpha = 0.8f),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Light,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
-
-            // Vertical divider
-            Box(
-                modifier = Modifier
-                    .width(1.dp)
-                    .fillMaxHeight(0.7f)
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                Color.Transparent,
-                                accentColor.copy(alpha = 0.4f),
-                                Color.Transparent
-                            )
-                        )
-                    )
-            )
-
-            // Right section: Prayer times
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                // Next prayer highlight
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth(0.9f)
-                        .border(1.dp, accentColor.copy(alpha = 0.4f), RoundedCornerShape(22.dp))
-                        .background(accentColor.copy(alpha = 0.07f), RoundedCornerShape(22.dp))
-                        .padding(horizontal = 24.dp, vertical = 18.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = if (isAr) "الصلاة القادمة" else "NEXT PRAYER",
-                        color = accentColor.copy(alpha = 0.6f),
-                        fontSize = 10.sp,
-                        fontFamily = FontFamily.Monospace,
-                        letterSpacing = 3.sp
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = arabicPrayerName,
-                            color = AmberZen,
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.Normal,
-                            style = TextStyle(
-                                shadow = androidx.compose.ui.graphics.Shadow(
-                                    color = AmberZen.copy(alpha = 0.55f),
-                                    blurRadius = 18f
-                                )
-                            )
-                        )
-                        Text(
-                            text = nextPrayerTime,
-                            color = Color.White,
-                            fontSize = 26.sp,
-                            fontFamily = FontFamily.Monospace,
-                            letterSpacing = 1.sp
-                        )
-                    }
-                    
-                    Spacer(modifier = Modifier.height(10.dp))
-                    
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(7.dp)
-                                .background(AmberZen.copy(alpha = pulseBright), RoundedCornerShape(50))
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = nextPrayerCountdown,
-                            color = AmberZen.copy(alpha = 0.95f),
-                            fontSize = 16.sp,
-                            fontFamily = FontFamily.Monospace,
-                            letterSpacing = 1.sp
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = if (isAr) "متبقي" else "REMAINING",
-                            color = Color.White.copy(alpha = 0.45f),
-                            fontSize = 10.sp,
-                            fontFamily = FontFamily.Monospace,
-                            letterSpacing = 1.sp
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // All prayer times grid
-                if (allPrayerTimes.isNotEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.9f)
-                            .background(Color.White.copy(alpha = 0.03f), RoundedCornerShape(16.dp))
-                            .border(0.6.dp, accentColor.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
-                            .padding(vertical = 16.dp, horizontal = 12.dp)
-                    ) {
-                        val prayerList = listOf("الفجر", "الشروق", "الظهر", "العصر", "المغرب", "العشاء")
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            prayerList.forEach { name ->
-                                PrayerItemLandscape(
-                                    name, 
-                                    allPrayerTimes[name] ?: "--:--", 
-                                    isAr, 
-                                    name == arabicPrayerName,
-                                    accentColor
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun PrayerItemLandscape(
-    name: String,
-    time: String,
-    isAr: Boolean,
-    isCurrent: Boolean,
-    accentColor: Color
-) {
-    val bgColor = if (isCurrent) accentColor.copy(alpha = 0.1f) else Color.Transparent
-    val borderColor = if (isCurrent) accentColor.copy(alpha = 0.35f) else Color.Transparent
-    val textColor = if (isCurrent) AmberZen else Color.White.copy(alpha = 0.7f)
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(bgColor, RoundedCornerShape(10.dp))
-            .border(0.8.dp, borderColor, RoundedCornerShape(10.dp))
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = name,
-            color = textColor,
-            fontSize = 16.sp,
-            fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal
-        )
-        Text(
-            text = time,
-            color = textColor,
-            fontSize = 15.sp,
-            fontFamily = FontFamily.Monospace
         )
     }
 }
