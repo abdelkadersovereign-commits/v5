@@ -97,13 +97,13 @@ class MainActivity : FragmentActivity() {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
 
-    // Initialize Sovereign Pulse Protocol
-    val workRequest = PeriodicWorkRequestBuilder<NotificationWorker>(4, TimeUnit.HOURS)
-      .setInitialDelay(15, TimeUnit.MINUTES)
+    // Initialize Sovereign Pulse Protocol - Running every 15 minutes for better precision
+    val workRequest = PeriodicWorkRequestBuilder<NotificationWorker>(15, TimeUnit.MINUTES)
+      .setInitialDelay(1, TimeUnit.MINUTES)
       .build()
     WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
       "sovereign_pulse",
-      ExistingPeriodicWorkPolicy.KEEP,
+      ExistingPeriodicWorkPolicy.REPLACE, // Use REPLACE to ensure the new frequency is applied
       workRequest
     )
 

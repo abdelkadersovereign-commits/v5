@@ -95,26 +95,36 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     private fun calculatePrayerTimes() {
         val coords = _currentLocation.value ?: Coordinates(33.5138, 36.2765)
         val date = DateComponents.from(Date())
-        val params = CalculationMethod.MUSLIM_WORLD_LEAGUE.parameters
+        // Use Umm Al-Qura for better accuracy in many regions, or keep MWL but allow customization
+        // For now, let's ensure we use a robust method. 
+        val params = CalculationMethod.UMM_AL_QURA.parameters
         params.madhab = Madhab.SHAFI
 
         val prayerTimes = PrayerTimes(coords, date, params)
         
         val now = Date()
         val nextPrayer = prayerTimes.nextPrayer()
-        val nextPrayerTimeDate = prayerTimes.timeForPrayer(nextPrayer) ?: prayerTimes.timeForPrayer(Prayer.FAJR)
-
+        
         // Handle case where next prayer is Fajr tomorrow
-        val effectiveNextPrayer = if (nextPrayer == Prayer.NONE) Prayer.FAJR else nextPrayer
-        val finalNextPrayerTime = if (nextPrayer == Prayer.NONE) {
+        val effectiveNextPrayer = if (nextPrayer == Prayer.NONE || nextPrayer == Prayer.ISHRAQ) Prayer.FAJR else nextPrayer
+        val finalNextPrayerTime = if (nextPrayer == Prayer.NONE || nextPrayer == Prayer.ISHRAQ) {
              val tomorrow = Calendar.getInstance()
              tomorrow.add(Calendar.DAY_OF_YEAR, 1)
-             PrayerTimes(coords, DateComponents.from(tomorrow.time), params).timeForPrayer(Prayer.FAJR)
+             PrayerTimes(coords, DateComponents.from(tomorrow.time), params).fajr
         } else {
             prayerTimes.timeForPrayer(effectiveNextPrayer)
         }
 
-        _nextPrayerName.value = effectiveNextPrayer.name.uppercase()
+        val prayerNameAr = when(effectiveNextPrayer) {
+            Prayer.FAJR -> "الفجر"
+            Prayer.SUNRISE -> "الشروق"
+            Prayer.DHUHR -> "الظهر"
+            Prayer.ASR -> "العصر"
+            Prayer.MAGHRIB -> "المغرب"
+            Prayer.ISHA -> "العشاء"
+            else -> effectiveNextPrayer.name
+        }
+        _nextPrayerName.value = prayerNameAr
         
         val cal = Calendar.getInstance()
         cal.time = finalNextPrayerTime

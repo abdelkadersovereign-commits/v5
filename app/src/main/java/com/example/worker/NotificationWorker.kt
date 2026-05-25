@@ -61,7 +61,7 @@ class NotificationWorker(context: Context, params: WorkerParameters) : Coroutine
 
         val coords = Coordinates(lat, lon)
         val date = DateComponents.from(Date())
-        val params = CalculationMethod.MUSLIM_WORLD_LEAGUE.parameters.also { it.madhab = Madhab.SHAFI }
+        val params = CalculationMethod.UMM_AL_QURA.parameters.also { it.madhab = Madhab.SHAFI }
         val prayerTimes = PrayerTimes(coords, date, params)
 
         val now = Calendar.getInstance()
@@ -69,6 +69,7 @@ class NotificationWorker(context: Context, params: WorkerParameters) : Coroutine
 
         val prayers = listOf(
             Prayer.FAJR to prayerTimes.fajr,
+            Prayer.SUNRISE to prayerTimes.sunrise,
             Prayer.DHUHR to prayerTimes.dhuhr,
             Prayer.ASR to prayerTimes.asr,
             Prayer.MAGHRIB to prayerTimes.maghrib,
@@ -77,6 +78,7 @@ class NotificationWorker(context: Context, params: WorkerParameters) : Coroutine
 
         val arabicNames = mapOf(
             Prayer.FAJR to "الفجر",
+            Prayer.SUNRISE to "الشروق",
             Prayer.DHUHR to "الظهر",
             Prayer.ASR to "العصر",
             Prayer.MAGHRIB to "المغرب",
@@ -101,7 +103,7 @@ class NotificationWorker(context: Context, params: WorkerParameters) : Coroutine
                 )
             }
             // Notify exactly at prayer time
-            if (minutesBefore in -1..1) {
+            if (minutesBefore == 0) {
                 val name = if (isAr) (arabicNames[prayer] ?: prayer.name) else prayer.name
                 showNotification(
                     title = if (isAr) "🕌 حان وقت $name" else "🕌 Time for ${prayer.name}",
