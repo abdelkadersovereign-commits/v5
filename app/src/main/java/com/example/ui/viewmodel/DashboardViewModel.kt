@@ -116,6 +116,10 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val _isNeuralLinkOffline = MutableStateFlow(false)
     val isNeuralLinkOffline: StateFlow<Boolean> = _isNeuralLinkOffline.asStateFlow()
 
+    // Internet connection status (regardless of Gemini API)
+    private val _hasInternetConnection = MutableStateFlow(true)
+    val hasInternetConnection: StateFlow<Boolean> = _hasInternetConnection.asStateFlow()
+
     private val _isTestingKey = MutableStateFlow(false)
     val isTestingKey: StateFlow<Boolean> = _isTestingKey.asStateFlow()
 
@@ -709,6 +713,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         // Check for basic internet capability - being less strict to avoid "false offline" states
         val hasInternet = capabilities != null &&
             capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+
+        // Update internet connection status
+        _hasInternetConnection.value = hasInternet
 
         if (hasInternet) {
             when {

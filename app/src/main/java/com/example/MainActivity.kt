@@ -115,14 +115,14 @@ class MainActivity : FragmentActivity() {
           val prayerVm: com.example.ui.viewmodel.PrayerViewModel = viewModel()
           val isAr by vm.isArabic.collectAsState()
 
-          fun triggerBiometricAuth(title: String, subtitle: String, onSuccess: () -> Unit) {
+          fun triggerBiometricAuth(title: String, subtitle: String, onSuccess: () -> Unit, closeOnCancel: Boolean = false) {
             if (isAuthInProgress) return
-            
+
             val biometricManager = BiometricManager.from(this@MainActivity)
             val canAuth = biometricManager.canAuthenticate(
               BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
             )
-            
+
             if (canAuth != BiometricManager.BIOMETRIC_SUCCESS) {
               isSessionAuthenticated = true
               onSuccess()
@@ -138,7 +138,10 @@ class MainActivity : FragmentActivity() {
                   isAuthInProgress = false
                   when (errorCode) {
                     BiometricPrompt.ERROR_USER_CANCELED,
-                    BiometricPrompt.ERROR_NEGATIVE_BUTTON -> finish()
+                    BiometricPrompt.ERROR_NEGATIVE_BUTTON -> {
+                      if (closeOnCancel) finish()
+                      else Toast.makeText(applicationContext, if (isAr) "تم الإلغاء" else "Cancelled", Toast.LENGTH_SHORT).show()
+                    }
                     BiometricPrompt.ERROR_CANCELED -> { /* System cancel, wait for next trigger */ }
                     else -> Toast.makeText(applicationContext, "Auth Error: $errString", Toast.LENGTH_SHORT).show()
                   }
@@ -174,7 +177,8 @@ class MainActivity : FragmentActivity() {
               onSuccess = {
                 Toast.makeText(applicationContext, "Neural Interface Unlocked", Toast.LENGTH_SHORT).show()
                 // Permissions requested on next ON_RESUME to avoid ActivityResultLauncher state issues
-              }
+              },
+              closeOnCancel = true
             )
           }
           

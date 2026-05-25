@@ -205,8 +205,13 @@ class NotificationWorker(context: Context, params: WorkerParameters) : Coroutine
             val timeFormat = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
             val timeStr = timeFormat.format(prayerCal.time)
 
-            // Notify 5 minutes before with a short dua
-            if (minutesBefore in 4..6) {
+            // Check if we've already notified for this prayer today
+            val lastNotified5Min = prefs.getString("last_5min_${prayer.name}", "")
+            val lastNotifiedExact = prefs.getString("last_exact_${prayer.name}", "")
+            val todayDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(Date())
+
+            // Notify 5 minutes before (expanded range to catch it even with 15-min checks)
+            if (minutesBefore in 3..7 && lastNotified5Min != todayDate) {
                 val name = if (isAr) (arabicNames[prayer] ?: prayer.name) else prayer.name
                 val dua = SHORT_DUAS[prayer] ?: ""
                 showNotification(
@@ -219,10 +224,12 @@ class NotificationWorker(context: Context, params: WorkerParameters) : Coroutine
                     id = 2000 + prayer.ordinal(),
                     channelId = CHANNEL_PRAYER
                 )
+                // Mark as notified
+                prefs.edit().putString("last_5min_${prayer.name}", todayDate).apply()
             }
 
-            // Notify exactly at prayer time with a motivational message
-            if (minutesBefore == 0) {
+            // Notify at prayer time (expanded range to -2 to +2 minutes to ensure we catch it)
+            if (minutesBefore in -2..2 && lastNotifiedExact != todayDate) {
                 val name = if (isAr) (arabicNames[prayer] ?: prayer.name) else prayer.name
                 val motivation = PRAYER_MOTIVATIONS[prayer] ?: ""
                 showNotification(
@@ -235,6 +242,8 @@ class NotificationWorker(context: Context, params: WorkerParameters) : Coroutine
                     id = 3000 + prayer.ordinal(),
                     channelId = CHANNEL_PRAYER
                 )
+                // Mark as notified
+                prefs.edit().putString("last_exact_${prayer.name}", todayDate).apply()
             }
         }
     }
