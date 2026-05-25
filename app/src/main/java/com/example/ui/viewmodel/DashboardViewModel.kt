@@ -278,11 +278,52 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val _isSettingsOpen = MutableStateFlow(false)
     val isSettingsOpen: StateFlow<Boolean> = _isSettingsOpen.asStateFlow()
 
+    // DoH (DNS-over-HTTPS) resolver: bypasses ISP DNS filtering in restricted regions
+    // Uses Cloudflare and Google DoH as fallbacks - no VPN needed
+    private val dohClient = OkHttpClient.Builder()
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .readTimeout(5, TimeUnit.SECONDS)
+        .build()
+
+    private val bypassDns = object : okhttp3.Dns {
+        override fun lookup(hostname: String): List<java.net.InetAddress> {
+            // Try system DNS first (fast path)
+            try {
+                val result = okhttp3.Dns.SYSTEM.lookup(hostname)
+                if (result.isNotEmpty()) return result
+            } catch (_: Exception) {}
+            // Fallback: Cloudflare DoH
+            for (dohUrl in listOf(
+                "https://1.1.1.1/dns-query?name=$hostname&type=A",
+                "https://8.8.8.8/resolve?name=$hostname&type=A"
+            )) {
+                try {
+                    val req = okhttp3.Request.Builder().url(dohUrl)
+                        .header("Accept", "application/dns-json").build()
+                    val resp = dohClient.newCall(req).execute()
+                    val body = resp.body?.string() ?: continue
+                    val json = org.json.JSONObject(body)
+                    val answers = json.optJSONArray("Answer") ?: continue
+                    val addrs = mutableListOf<java.net.InetAddress>()
+                    for (i in 0 until answers.length()) {
+                        val a = answers.getJSONObject(i)
+                        if (a.optInt("type") == 1) {
+                            try { addrs.add(java.net.InetAddress.getByName(a.getString("data"))) } catch (_: Exception) {}
+                        }
+                    }
+                    if (addrs.isNotEmpty()) return addrs
+                } catch (_: Exception) {}
+            }
+            throw java.net.UnknownHostException("Could not resolve $hostname")
+        }
+    }
+
     private val okHttpClient = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(45, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
         .retryOnConnectionFailure(true)
+        .dns(bypassDns)
         .build()
 
     private suspend fun generateContentSafely(prompt: String): String {
@@ -558,8 +599,15 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             dataStore.neuralProxy.collect { _isNeuralProxy.value = it }
         }
-        
-        // Phase 26: Background Neural Services disabled to protect Quota
+
+        // Fetch public IP immediately on start
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                _ipAddress.value = fetchPublicIp()
+            } catch (_: Exception) {
+                _ipAddress.value = extractLocalIp()
+            }
+        }
     }
 
     // Phase 26: Removed background polling to ensure API key remains dormant
