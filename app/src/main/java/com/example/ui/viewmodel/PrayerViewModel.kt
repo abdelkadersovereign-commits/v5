@@ -106,8 +106,8 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         val nextPrayer = prayerTimes.nextPrayer()
         
         // Handle case where next prayer is Fajr tomorrow
-        val effectiveNextPrayer = if (nextPrayer == Prayer.NONE || nextPrayer == Prayer.ISHRAQ) Prayer.FAJR else nextPrayer
-        val finalNextPrayerTime = if (nextPrayer == Prayer.NONE || nextPrayer == Prayer.ISHRAQ) {
+        val effectiveNextPrayer = if (nextPrayer == Prayer.NONE) Prayer.FAJR else nextPrayer
+        val finalNextPrayerTime = if (nextPrayer == Prayer.NONE) {
              val tomorrow = Calendar.getInstance()
              tomorrow.add(Calendar.DAY_OF_YEAR, 1)
              PrayerTimes(coords, DateComponents.from(tomorrow.time), params).fajr

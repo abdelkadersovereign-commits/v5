@@ -255,14 +255,24 @@ fun DashboardScreen(
     val cardRollShift by remember { derivedStateOf { smoothRoll * 0.8f } }
     val cardPitchShift by remember { derivedStateOf { smoothPitch * 0.8f } }
 
-    val spiritualVerses = remember {
-        listOf(
-            "أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ",
-            "إِنَّ مَعَ الْعُسْرِ يُسْرًا",
-            "وَمَنْ يَتَوَكَّلْ عَلَى اللَّهِ فَهُوَ حَسْبُهُ",
-            "يَهْدِي اللَّهُ لِنُورِهِ مَنْ يَشَاءُ",
-            "وَكَانَ حقًّا عَلَيْنَا نَصْرُ الْمُؤْمِنِينَ"
-        )
+        val spiritualVerses = remember(isAr) {
+        if (isAr) {
+            listOf(
+                "أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ",
+                "إِنَّ مَعَ الْعُسْرِ يُسْرًا",
+                "وَمَنْ يَتَوَكَّلْ عَلَى اللَّهِ فَهُوَ حَسْبُهُ",
+                "يَهْدِي اللَّهُ لِنُورِهِ مَنْ يَشَاءُ",
+                "وَكَانَ حقًّا عَلَيْنَا نَصْرُ الْمُؤْمِنِينَ"
+            )
+        } else {
+            listOf(
+                "Verily, in the remembrance of Allah do hearts find rest",
+                "Indeed, with hardship comes ease",
+                "And whoever relies upon Allah - then He is sufficient for him",
+                "Allah guides to His light whom He wills",
+                "And it was due from Us to aid the believers"
+            )
+        }
     }
     var currentVerseIndex by remember { mutableStateOf(0) }
 
