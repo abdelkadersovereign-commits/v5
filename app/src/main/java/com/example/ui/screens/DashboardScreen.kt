@@ -289,8 +289,16 @@ fun DashboardScreen(
         isStealthMode -> listOf(VoidBlack, Color(0xFF030508))
         stateType == ContextualVerseEngine.AmbientStateType.CRITICAL -> listOf(Color(0xFF1B0701), VoidBlack)
         stateType == ContextualVerseEngine.AmbientStateType.HIGH_PERFORMANCE -> listOf(Color(0xFF001B26), VoidBlack)
-        else -> listOf(VoidBlack, Color(0xFF04060A))
+        isNeuralLinkOffline -> listOf(Color(0xFF1A0E00), VoidBlack) // warm tone when offline
+        else -> listOf(Color(0xFF001520), VoidBlack) // cool blue tone when online
     }
+
+    // Connection-aware dynamic accent: Blue when ONLINE, Orange when OFFLINE
+    val dynamicAccent by animateColorAsState(
+        targetValue = if (isNeuralLinkOffline) AmberZen else CyberCyan,
+        animationSpec = tween(800),
+        label = "dynamicAccent"
+    )
 
     Box(
         modifier = Modifier
@@ -347,6 +355,15 @@ fun DashboardScreen(
                             operatorName = operatorName,
                             neuralRole = neuralRole,
                             isStealth = isStealthMode
+                        )
+                    }
+
+                    // Connection-aware status pill (blue when online, orange when offline)
+                    item {
+                        ConnectionStatusPill(
+                            isOnline = !isNeuralLinkOffline,
+                            accent = dynamicAccent,
+                            isAr = isAr
                         )
                     }
                     
@@ -443,7 +460,7 @@ fun DashboardScreen(
                             TacticalGridButton(
                                 text = if (isAr) "[ تشغيل المصنع ]" else "[ ACTIVATE FORGE ]",
                                 subtitle = if (isAr) "أنشئ أفكاراً وابتكارات بالذكاء الاصطناعي واحفظها" else "AI idea generator & innovation studio",
-                                color = AmberZen,
+                                color = dynamicAccent,
                                 onClick = {
                                     haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                                     viewModel.setForgePanelOpen(true)
@@ -453,7 +470,7 @@ fun DashboardScreen(
                             TacticalGridButton(
                                 text = if (isAr) "[ دخول الخزنة ]" else "[ ENTER VAULT ]",
                                 subtitle = if (isAr) "مخزن مشفر لأفكارك ومعلوماتك السرية" else "Encrypted vault for saved ideas & notes",
-                                color = CyberCyan,
+                                color = dynamicAccent,
                                 onClick = {
                                     haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                                     if (viewModel.isVaultAuthenticated.value) {
@@ -489,7 +506,7 @@ fun DashboardScreen(
                             TacticalGridButton(
                                 text = if (isAr) "[ منهج الأكاديمية ]" else "[ ACADEMY SYLLABUS ]",
                                 subtitle = if (isAr) "اختبارات أمنية تفاعلية بالذكاء الاصطناعي" else "AI-powered interactive security tests",
-                                color = CyberCyan,
+                                color = dynamicAccent,
                                 onClick = {
                                     haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                                     viewModel.setAcademyOpen(true)
@@ -499,7 +516,7 @@ fun DashboardScreen(
                             TacticalGridButton(
                                 text = if (isAr) "[ مصادر الذكاء ]" else "[ INTEL DIRECTORY ]",
                                 subtitle = if (isAr) "مقالات وأدوات أمن المعلومات المختارة" else "Curated cybersecurity tools & resources",
-                                color = AmberZen,
+                                color = dynamicAccent,
                                 onClick = {
                                     haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                                     viewModel.setResourcesOpen(true)
@@ -1403,6 +1420,7 @@ fun DashboardScreen(
                 prayerCountdown = nextPrayerCountdown,
                 allPrayerTimes = allPrayerTimes,
                 isAr = isAr,
+                isOnline = !isNeuralLinkOffline,
                 onClose = { isDesktopModeOpen = false }
             )
         }
@@ -2910,6 +2928,7 @@ fun DesktopModeScreen(
     prayerCountdown: String,
     allPrayerTimes: Map<String, String>,
     isAr: Boolean,
+    isOnline: Boolean = true,
     onClose: () -> Unit
 ) {
     val calendar = Calendar.getInstance()
@@ -2925,7 +2944,7 @@ fun DesktopModeScreen(
     // Approximate Hijri date
     val hijriMonths = listOf("محرم", "صفر", "ربيع الأول", "ربيع الثاني", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة")
     val epochMillis = calendar.timeInMillis
-    val hijriDaysSinceEpoch = ((epochMillis / 86400000L) - 10643) // Approximate offset from Unix epoch to Hijri
+    val hijriDaysSinceEpoch = ((epochMillis / 86400000L) - 10643)
     val hijriCycleYears = (hijriDaysSinceEpoch / 10631L) * 30L
     val remainingDays = hijriDaysSinceEpoch % 10631L
     val hijriYear = (hijriCycleYears + (remainingDays / 354L) + 1).toInt()
@@ -2936,198 +2955,318 @@ fun DesktopModeScreen(
 
     val arabicPrayerName = prayerNameToArabic(prayerName)
 
-    // Animated background gradient
+    // Connection-aware accent color
+    val accentColor = if (isOnline) CyberCyan else AmberZen
+
+    // Live digital time
+    var currentTime by remember { mutableStateOf(getCurrentTimeFormatted()) }
+    var currentSeconds by remember { mutableStateOf(getCurrentSecondsFormatted()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            currentTime = getCurrentTimeFormatted()
+            currentSeconds = getCurrentSecondsFormatted()
+            kotlinx.coroutines.delay(1000)
+        }
+    }
+
+    // Animated subtle pulse
     val infiniteTransition = rememberInfiniteTransition(label = "desktopBg")
-    val gradientShift by infiniteTransition.animateFloat(
-        initialValue = 0f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(8000, easing = LinearEasing), RepeatMode.Reverse),
-        label = "gradShift"
-    )
     val pulseBright by infiniteTransition.animateFloat(
-        initialValue = 0.5f, targetValue = 1.0f,
+        initialValue = 0.65f, targetValue = 1.0f,
         animationSpec = infiniteRepeatable(tween(2200, easing = LinearEasing), RepeatMode.Reverse),
         label = "pulseBright"
     )
+    val ringRotation by infiniteTransition.animateFloat(
+        initialValue = 0f, targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(45000, easing = LinearEasing), RepeatMode.Restart),
+        label = "ringRotation"
+    )
+    val ambientShift by infiniteTransition.animateFloat(
+        initialValue = 0f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(12000, easing = LinearEasing), RepeatMode.Reverse),
+        label = "ambientShift"
+    )
 
-    val bgColor1 = Color(0xFF001220)
-    val bgColor2 = Color(0xFF000A14)
-    val bgColor3 = Color(0xFF001A2C)
-
-    // Particle state for ambient effect
+    // Static particles (deeper, fewer for clean look)
     val particles = remember {
-        List(40) {
+        List(60) {
             SpaceParticle(
                 x = Random.nextFloat(),
                 y = Random.nextFloat(),
-                size = Random.nextFloat() * 2f + 0.5f,
-                opacity = Random.nextFloat() * 0.4f + 0.1f
+                size = Random.nextFloat() * 1.8f + 0.4f,
+                opacity = Random.nextFloat() * 0.5f + 0.1f
             )
         }
     }
 
+    // ===== ROOT MODAL CONTAINER — FULLY OPAQUE =====
+    // Use a separate full-screen black backdrop first so NOTHING underneath shows through.
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        bgColor1,
-                        bgColor2.copy(alpha = 0.5f + gradientShift * 0.3f),
-                        bgColor3
-                    )
-                )
-            ),
+            .background(Color(0xFF000308))
+            .pointerInput(Unit) { detectTapGestures { } }, // Consume any touches passing through
         contentAlignment = Alignment.Center
     ) {
+        // Solid deep-space gradient layer (fully opaque)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            accentColor.copy(alpha = 0.10f),
+                            Color(0xFF030812),
+                            Color(0xFF000204)
+                        ),
+                        radius = 1800f
+                    )
+                )
+        )
+
         // Ambient particles
         Canvas(modifier = Modifier.fillMaxSize()) {
             particles.forEach { p ->
-                val px = p.x * this.size.width
-                val py = (p.y + gradientShift * 0.02f) % 1f * this.size.height
+                val px = p.x * size.width
+                val py = ((p.y + ambientShift * 0.05f) % 1f) * size.height
                 drawCircle(
-                    color = CyberCyan.copy(alpha = p.opacity * pulseBright),
+                    color = accentColor.copy(alpha = p.opacity * pulseBright * 0.7f),
                     radius = p.size.dp.toPx(),
                     center = Offset(px, py)
                 )
             }
         }
 
-        // Close button (top corner)
+        // Thin connection-status accent border (subtle frame)
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .border(
+                    width = 1.dp,
+                    brush = Brush.verticalGradient(
+                        listOf(
+                            accentColor.copy(alpha = 0.5f),
+                            Color.Transparent,
+                            accentColor.copy(alpha = 0.5f)
+                        )
+                    ),
+                    shape = RoundedCornerShape(0.dp)
+                )
+        )
+
+        // Close button (top-start) + Connection status badge (top-end)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(16.dp),
-            contentAlignment = Alignment.TopStart
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .align(Alignment.TopCenter),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onClose) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Close",
-                    tint = CyberCyan
+                    tint = accentColor
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .border(0.75.dp, accentColor.copy(alpha = 0.55f), RoundedCornerShape(50))
+                    .background(accentColor.copy(alpha = 0.08f), RoundedCornerShape(50))
+                    .padding(horizontal = 12.dp, vertical = 5.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(7.dp)
+                        .background(accentColor.copy(alpha = pulseBright), RoundedCornerShape(50))
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = if (isOnline) (if (isAr) "متصل" else "ONLINE") else (if (isAr) "غير متصل" else "OFFLINE"),
+                    color = accentColor,
+                    fontSize = 10.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp
                 )
             }
         }
 
-        // Main content
+        // ===== MAIN CONTENT =====
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 24.dp, vertical = 56.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically)
         ) {
-            // Large Analog Clock
-            AnalogClock(size = 220)
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Gregorian date
-            Text(
-                text = dateString,
-                color = CyberCyan.copy(alpha = 0.85f),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Light,
-                textAlign = TextAlign.Center,
-                style = TextStyle(
-                    shadow = androidx.compose.ui.graphics.Shadow(
-                        color = CyberCyan.copy(alpha = 0.4f),
-                        blurRadius = 12f
+            // Rotating ring around the BIG digital time (showpiece)
+            Box(
+                modifier = Modifier
+                    .size(280.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val radius = size.minDimension / 2f - 6f
+                    val center = Offset(size.width / 2f, size.height / 2f)
+                    // Outer rotating decorative ring
+                    rotate(ringRotation, pivot = center) {
+                        drawCircle(
+                            color = accentColor.copy(alpha = 0.20f),
+                            radius = radius,
+                            center = center,
+                            style = Stroke(width = 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 16f), 0f))
+                        )
+                    }
+                    // Inner static ring
+                    drawCircle(
+                        color = accentColor.copy(alpha = 0.35f),
+                        radius = radius - 18f,
+                        center = center,
+                        style = Stroke(width = 0.7f)
                     )
-                )
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Hijri date
-            Text(
-                text = hijriString,
-                color = AmberZen.copy(alpha = 0.7f),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Light,
-                textAlign = TextAlign.Center,
-                style = TextStyle(
-                    shadow = androidx.compose.ui.graphics.Shadow(
-                        color = AmberZen.copy(alpha = 0.3f),
-                        blurRadius = 8f
+                    // Glow halo
+                    drawCircle(
+                        color = accentColor.copy(alpha = 0.08f * pulseBright),
+                        radius = radius - 30f,
+                        center = center
                     )
-                )
-            )
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            // Next Prayer Countdown (prominent)
-            Text(
-                text = if (isAr) "الصلاة القادمة" else "NEXT PRAYER",
-                color = CyberCyan.copy(alpha = 0.5f),
-                fontSize = 10.sp,
-                fontFamily = FontFamily.Monospace,
-                letterSpacing = 2.sp
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = arabicPrayerName,
-                color = AmberZen.copy(alpha = pulseBright),
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Light,
-                style = TextStyle(
-                    shadow = androidx.compose.ui.graphics.Shadow(
-                        color = AmberZen.copy(alpha = 0.5f),
-                        blurRadius = 20f
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = currentTime,
+                        color = accentColor,
+                        fontSize = 58.sp,
+                        fontWeight = FontWeight.ExtraLight,
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = 4.sp,
+                        style = TextStyle(
+                            shadow = androidx.compose.ui.graphics.Shadow(
+                                color = accentColor.copy(alpha = 0.55f),
+                                blurRadius = 28f
+                            )
+                        )
                     )
-                )
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = prayerTime,
-                color = CyberCyan.copy(alpha = 0.8f),
-                fontSize = 20.sp,
-                fontFamily = FontFamily.Monospace,
-                letterSpacing = 2.sp
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .background(AmberZen.copy(alpha = pulseBright), RoundedCornerShape(50))
-                )
-                Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = currentSeconds,
+                        color = accentColor.copy(alpha = 0.55f),
+                        fontSize = 14.sp,
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = 6.sp
+                    )
+                }
+            }
+
+            // Date strip
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = prayerCountdown,
-                    color = AmberZen.copy(alpha = 0.9f),
+                    text = dateString,
+                    color = Color.White.copy(alpha = 0.85f),
                     fontSize = 16.sp,
-                    fontFamily = FontFamily.Monospace,
-                    letterSpacing = 1.sp
+                    fontWeight = FontWeight.Light,
+                    textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.width(6.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = if (isAr) "متبقي" else "REMAINING",
-                    color = CyberCyan.copy(alpha = 0.4f),
-                    fontSize = 9.sp,
-                    fontFamily = FontFamily.Monospace
+                    text = hijriString,
+                    color = AmberZen.copy(alpha = 0.75f),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Light,
+                    textAlign = TextAlign.Center
                 )
             }
 
-            Spacer(modifier = Modifier.height(30.dp))
+            // Next prayer pill
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(0.92f)
+                    .border(0.75.dp, accentColor.copy(alpha = 0.35f), RoundedCornerShape(18.dp))
+                    .background(accentColor.copy(alpha = 0.05f), RoundedCornerShape(18.dp))
+                    .padding(horizontal = 18.dp, vertical = 14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = if (isAr) "الصلاة القادمة" else "NEXT PRAYER",
+                    color = accentColor.copy(alpha = 0.55f),
+                    fontSize = 9.sp,
+                    fontFamily = FontFamily.Monospace,
+                    letterSpacing = 3.sp
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = arabicPrayerName,
+                        color = AmberZen,
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Normal,
+                        style = TextStyle(
+                            shadow = androidx.compose.ui.graphics.Shadow(
+                                color = AmberZen.copy(alpha = 0.5f),
+                                blurRadius = 16f
+                            )
+                        )
+                    )
+                    Text(
+                        text = prayerTime,
+                        color = Color.White,
+                        fontSize = 22.sp,
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = 1.sp
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .background(AmberZen.copy(alpha = pulseBright), RoundedCornerShape(50))
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = prayerCountdown,
+                        color = AmberZen.copy(alpha = 0.9f),
+                        fontSize = 14.sp,
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isAr) "متبقي" else "REMAINING",
+                        color = Color.White.copy(alpha = 0.4f),
+                        fontSize = 9.sp,
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = 1.sp
+                    )
+                }
+            }
 
-            // All Prayer Times
+            // All Prayer Times grid
             if (allPrayerTimes.isNotEmpty()) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(0.85f)
-                        .background(Color.White.copy(alpha = 0.03f), RoundedCornerShape(12.dp))
-                        .border(0.5.dp, CyberCyan.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                        .padding(16.dp)
+                        .fillMaxWidth(0.92f)
+                        .background(Color.White.copy(alpha = 0.025f), RoundedCornerShape(14.dp))
+                        .border(0.5.dp, accentColor.copy(alpha = 0.18f), RoundedCornerShape(14.dp))
+                        .padding(vertical = 14.dp, horizontal = 10.dp)
                 ) {
                     val prayerList = listOf("الفجر", "الشروق", "الظهر", "العصر", "المغرب", "العشاء")
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // Row 1
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
@@ -3137,7 +3276,6 @@ fun DesktopModeScreen(
                             }
                         }
                         Spacer(modifier = Modifier.height(14.dp))
-                        // Row 2
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
@@ -3150,5 +3288,77 @@ fun DesktopModeScreen(
                 }
             }
         }
+    }
+}
+
+private fun getCurrentTimeFormatted(): String {
+    val cal = Calendar.getInstance()
+    val hour = cal.get(Calendar.HOUR_OF_DAY)
+    val minute = cal.get(Calendar.MINUTE)
+    return String.format("%02d:%02d", hour, minute)
+}
+
+private fun getCurrentSecondsFormatted(): String {
+    val cal = Calendar.getInstance()
+    val second = cal.get(Calendar.SECOND)
+    val ampm = if (cal.get(Calendar.HOUR_OF_DAY) >= 12) "PM" else "AM"
+    return String.format("%02d  •  %s", second, ampm)
+}
+
+
+// ==========================================
+// CONNECTION-AWARE STATUS PILL
+// Blue when ONLINE, Orange when OFFLINE
+// ==========================================
+@Composable
+fun ConnectionStatusPill(
+    isOnline: Boolean,
+    accent: Color,
+    isAr: Boolean
+) {
+    val infinite = rememberInfiniteTransition(label = "connPulse")
+    val pulse by infinite.animateFloat(
+        initialValue = 0.55f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1200, easing = LinearEasing), RepeatMode.Reverse),
+        label = "pulse"
+    )
+    val glowAnim by infinite.animateFloat(
+        initialValue = 0.10f, targetValue = 0.28f,
+        animationSpec = infiniteRepeatable(tween(1800, easing = LinearEasing), RepeatMode.Reverse),
+        label = "glow"
+    )
+
+    Row(
+        modifier = Modifier
+            .wrapContentSize()
+            .border(0.75.dp, accent.copy(alpha = 0.5f), RoundedCornerShape(50))
+            .background(accent.copy(alpha = glowAnim), RoundedCornerShape(50))
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .background(accent.copy(alpha = pulse), RoundedCornerShape(50))
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = if (isOnline) {
+                if (isAr) "متصل بالشبكة" else "NETWORK ONLINE"
+            } else {
+                if (isAr) "غير متصل" else "NETWORK OFFLINE"
+            },
+            color = accent,
+            fontSize = 10.sp,
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 2.sp,
+            style = TextStyle(
+                shadow = androidx.compose.ui.graphics.Shadow(
+                    color = accent.copy(alpha = 0.6f),
+                    blurRadius = 10f
+                )
+            )
+        )
     }
 }
