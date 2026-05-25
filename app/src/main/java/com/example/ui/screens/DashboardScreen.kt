@@ -606,47 +606,27 @@ fun DashboardScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Input & Submit
-                Row(
+                Spacer(modifier = Modifier.height(8.dp))
+                // Read-only report mode — AI status dashboard only
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        .padding(bottom = 8.dp)
+                        .border(0.5.dp, CyberCyan.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                        .background(CyberCyan.copy(alpha = 0.03f), RoundedCornerShape(8.dp))
+                        .padding(10.dp)
                 ) {
-                    OutlinedTextField(
-                        value = terminalInput,
-                        onValueChange = { viewModel.updateTerminalInput(it) },
-                        modifier = Modifier.weight(1f),
-                        textStyle = TextStyle(color = Color.White, fontSize = 14.sp, fontFamily = FontFamily.Monospace),
-                        placeholder = { Text(if (isAr) "أدخل الاستعلام..." else "Enter query...", color = Color.White.copy(alpha = 0.3f), fontSize = 14.sp) },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = CyberCyan,
-                            unfocusedBorderColor = CyberCyan.copy(alpha = 0.3f),
-                            cursorColor = CyberCyan
-                        ),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                        keyboardActions = KeyboardActions(onSend = { 
-                            if (terminalInput.isNotBlank()) viewModel.sendTerminalQuery(terminalInput) 
-                            keyboardController?.hide()
-                        })
+                    Text(
+                        text = if (isAr)
+                            "[ تقرير الحالة ] — واجهة للقراءة فقط. استخدم الأكاديمية لاستعلامات الذكاء الاصطناعي."
+                        else
+                            "[ STATUS REPORT ] — Read-only view. Use Academy for AI interactions.",
+                        color = CyberCyan.copy(alpha = 0.5f),
+                        fontSize = 9.sp,
+                        fontFamily = FontFamily.Monospace,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
                     )
-
-                    Button(
-                        onClick = { 
-                            if (terminalInput.isNotBlank()) viewModel.sendTerminalQuery(terminalInput) 
-                            keyboardController?.hide()
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = CyberCyan),
-                        shape = RoundedCornerShape(8.dp),
-                        enabled = !isThinking && terminalInput.isNotBlank(),
-                        modifier = Modifier.height(56.dp)
-                    ) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = VoidBlack)
-                    }
                 }
             }
         }
