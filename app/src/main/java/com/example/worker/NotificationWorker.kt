@@ -94,7 +94,8 @@ class NotificationWorker(context: Context, params: WorkerParameters) : Coroutine
             val minutesBefore = prayerMinutes - currentMinutes
             if (minutesBefore in 4..6) {
                 val name = if (isAr) (arabicNames[prayer] ?: prayer.name) else prayer.name
-                val timeStr = String.format("%02d:%02d", prayerCal.get(Calendar.HOUR_OF_DAY), prayerCal.get(Calendar.MINUTE))
+                val timeFormat = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
+                val timeStr = timeFormat.format(prayerCal.time)
                 showNotification(
                     title = if (isAr) "⏰ تنبيه الصلاة — $name" else "⏰ Prayer Alert — ${prayer.name}",
                     message = if (isAr) "بعد 5 دقائق حان وقت $name الساعة $timeStr. استعد للصلاة."

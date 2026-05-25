@@ -33,6 +33,9 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     private val _nextPrayerTime = MutableStateFlow("00:00")
     val nextPrayerTime: StateFlow<String> = _nextPrayerTime.asStateFlow()
 
+    private val _allPrayerTimes = MutableStateFlow<Map<String, String>>(emptyMap())
+    val allPrayerTimes: StateFlow<Map<String, String>> = _allPrayerTimes.asStateFlow()
+
     private val _nextPrayerCountdown = MutableStateFlow("00:00:00")
     val nextPrayerCountdown: StateFlow<String> = _nextPrayerCountdown.asStateFlow()
 
@@ -126,9 +129,18 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         }
         _nextPrayerName.value = prayerNameAr
         
-        val cal = Calendar.getInstance()
-        cal.time = finalNextPrayerTime
-        _nextPrayerTime.value = String.format("%02d:%02d", cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))
+        val timeFormat = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
+        _nextPrayerTime.value = timeFormat.format(finalNextPrayerTime)
+
+        // Calculate all prayer times for display
+        val allTimes = mutableMapOf<String, String>()
+        allTimes["الفجر"] = timeFormat.format(prayerTimes.fajr)
+        allTimes["الشروق"] = timeFormat.format(prayerTimes.sunrise)
+        allTimes["الظهر"] = timeFormat.format(prayerTimes.dhuhr)
+        allTimes["العصر"] = timeFormat.format(prayerTimes.asr)
+        allTimes["المغرب"] = timeFormat.format(prayerTimes.maghrib)
+        allTimes["العشاء"] = timeFormat.format(prayerTimes.isha)
+        _allPrayerTimes.value = allTimes
 
         val diffMillis = finalNextPrayerTime.time - now.time
         if (diffMillis > 0) {

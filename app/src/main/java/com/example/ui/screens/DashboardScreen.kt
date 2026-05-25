@@ -157,6 +157,7 @@ fun DashboardScreen(
     val nextPrayerCountdown by prayerViewModel.nextPrayerCountdown.collectAsState()
     val nextPrayerProgress by prayerViewModel.nextPrayerProgress.collectAsState()
     val nextPrayerTime by prayerViewModel.nextPrayerTime.collectAsState()
+    val allPrayerTimes by prayerViewModel.allPrayerTimes.collectAsState()
     val qiblaDirection by prayerViewModel.qiblaDirection.collectAsState()
 
     val azimuth by viewModel.azimuth.collectAsState()
@@ -515,7 +516,8 @@ fun DashboardScreen(
                             prayerName = nextPrayerName,
                             prayerTime = nextPrayerTime,
                             prayerCountdown = nextPrayerCountdown,
-                            isAr = isAr
+                            isAr = isAr,
+                            allPrayerTimes = allPrayerTimes
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                     }
@@ -2302,11 +2304,12 @@ fun RadiantDigitalClock(
     prayerName: String,
     prayerTime: String = "00:00",
     prayerCountdown: String = "00:00:00",
-    isAr: Boolean
+    isAr: Boolean,
+    allPrayerTimes: Map<String, String> = emptyMap()
 ) {
     var currentTime by remember { mutableStateOf("") }
     LaunchedEffect(Unit) {
-        val sdf = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.ENGLISH)
+        val sdf = java.text.SimpleDateFormat("hh:mm:ss a", java.util.Locale.ENGLISH)
         while (true) {
             currentTime = sdf.format(java.util.Date())
             kotlinx.coroutines.delay(1000)
@@ -2401,10 +2404,10 @@ fun RadiantDigitalClock(
             Text(
                 text = currentTime,
                 color = CyberCyan,
-                fontSize = 46.sp,
+                fontSize = 36.sp,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Thin,
-                letterSpacing = 6.sp,
+                letterSpacing = 4.sp,
                 style = TextStyle(
                     shadow = androidx.compose.ui.graphics.Shadow(
                         color = CyberCyan.copy(alpha = 0.7f * glow),
@@ -2515,7 +2518,55 @@ fun RadiantDigitalClock(
                 }
             }
 
+            if (allPrayerTimes.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(color = Color.White.copy(alpha = 0.05f), thickness = 0.5.dp)
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                // All Prayer Times Grid
+                val prayerList = listOf("الفجر", "الشروق", "الظهر", "العصر", "المغرب", "العشاء")
+                
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    // Row 1
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                        prayerList.take(3).forEach { name ->
+                            PrayerItem(name, allPrayerTimes[name] ?: "--:--", isAr, name == arabicPrayerName)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    // Row 2
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                        prayerList.drop(3).forEach { name ->
+                            PrayerItem(name, allPrayerTimes[name] ?: "--:--", isAr, name == arabicPrayerName)
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+fun PrayerItem(name: String, time: String, isAr: Boolean, isNext: Boolean) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(80.dp)) {
+        Text(
+            text = name,
+            color = if (isNext) AmberZen else Color.White.copy(alpha = 0.6f),
+            fontSize = 11.sp,
+            fontWeight = if (isNext) FontWeight.Bold else FontWeight.Normal,
+            fontFamily = FontFamily.Serif
+        )
+        Text(
+            text = time.replace(" AM", "").replace(" PM", "").replace(" ص", "").replace(" م", ""),
+            color = if (isNext) CyberCyan else Color.White.copy(alpha = 0.4f),
+            fontSize = 12.sp,
+            fontFamily = FontFamily.Monospace,
+            fontWeight = if (isNext) FontWeight.Bold else FontWeight.Normal
+        )
+        if (isNext) {
+            Box(modifier = Modifier.height(2.dp).width(20.dp).background(AmberZen, RoundedCornerShape(1.dp)))
         }
     }
 }
