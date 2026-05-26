@@ -728,7 +728,6 @@ fun NeuralModuleTestView(
             moduleNameEn = module.titleEn,
             moduleNameAr = module.titleAr,
             useArabic = isAr,
-            usedIds = usedScenarioIds.toList(),
             usedTopics = usedTopicSnippets,
             onSuccess = { jsonString ->
                 try {
