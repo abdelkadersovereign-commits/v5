@@ -46,6 +46,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.CyberCyan
+import com.example.ui.theme.AmberZen
 import com.example.ui.theme.VoidBlack
 import com.example.ui.viewmodel.DashboardViewModel
 import androidx.lifecycle.Lifecycle
@@ -166,7 +167,6 @@ class MainActivity : FragmentActivity() {
             composable("dashboard") {
               val isAr by vm.isArabic.collectAsState()
               var activeTab by remember { mutableStateOf("home") }
-              val haptic = LocalHapticFeedback.current
 
               val isAcademyOpen by vm.isAcademyOpen.collectAsState()
               val isResourcesOpen by vm.isResourcesOpen.collectAsState()
