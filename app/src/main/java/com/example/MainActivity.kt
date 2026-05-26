@@ -190,7 +190,7 @@ class MainActivity : FragmentActivity() {
                            triggerBiometricAuth(title, sub, onOk)
                         }
                       )
-                      "academy" -> AcademyScreen(vm, { navController.navigate("glossary") }, { navController.navigate("checklist") })
+                      "academy" -> AcademyScreen(vm, onNavigateToGlossary = { navController.navigate("glossary") }, onNavigateToChecklist = { navController.navigate("checklist") })
                       "resources" -> ResourcesScreen(vm) { activeTab = "home" }
                       "settings" -> SettingsScreen(vm, { activeTab = "home" }, { navController.navigate("about") }) { title, sub, onOk -> triggerBiometricAuth(title, sub, onOk) }
                     }
