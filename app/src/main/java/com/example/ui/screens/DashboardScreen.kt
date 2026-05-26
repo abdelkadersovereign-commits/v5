@@ -185,7 +185,7 @@ fun DashboardScreen(
 
     fun openIntelligenceLink(url: String, title: String) {
         haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-        viewModel.analyzeResourceLink(url, title)
+        viewModel.analyzeResourceLink(url)
     }
 
     // Gemini states
