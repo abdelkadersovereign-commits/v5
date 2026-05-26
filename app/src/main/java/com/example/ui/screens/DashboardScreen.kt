@@ -292,10 +292,8 @@ fun DashboardScreen(
 
     val bgColors = when {
         isStealthMode -> listOf(VoidBlack, Color(0xFF030508))
-        stateType == ContextualVerseEngine.AmbientStateType.CRITICAL -> listOf(Color(0xFF1B0701), VoidBlack)
-        stateType == ContextualVerseEngine.AmbientStateType.HIGH_PERFORMANCE -> listOf(Color(0xFF001B26), VoidBlack)
-        isNeuralLinkOffline -> listOf(Color(0xFF1A0E00), VoidBlack) // warm tone when offline
-        else -> listOf(Color(0xFF001520), VoidBlack) // cool blue tone when online
+        isNeuralLinkOffline -> listOf(Color(0xFF1A0E00), VoidBlack) // Orange/Amber background when offline
+        else -> listOf(Color(0xFF001520), VoidBlack) // Cyber Blue background when online
     }
 
     // Connection-aware dynamic accent: Blue when ONLINE, Orange when OFFLINE

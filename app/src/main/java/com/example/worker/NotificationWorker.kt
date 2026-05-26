@@ -211,7 +211,7 @@ class NotificationWorker(context: Context, params: WorkerParameters) : Coroutine
             val todayDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(Date())
 
             // Notify 5 minutes before (expanded range to catch it even with 15-min checks)
-            if (minutesBefore in 3..7 && lastNotified5Min != todayDate) {
+            if (minutesBefore in 1..15 && lastNotified5Min != todayDate) {
                 val name = if (isAr) (arabicNames[prayer] ?: prayer.name) else prayer.name
                 val dua = SHORT_DUAS[prayer] ?: ""
                 showNotification(
@@ -228,8 +228,8 @@ class NotificationWorker(context: Context, params: WorkerParameters) : Coroutine
                 prefs.edit().putString("last_5min_${prayer.name}", todayDate).apply()
             }
 
-            // Notify at prayer time (expanded range to -2 to +2 minutes to ensure we catch it)
-            if (minutesBefore in -2..2 && lastNotifiedExact != todayDate) {
+            // Notify at prayer time (expanded range to ensure we catch it within the 15-min cycle)
+            if (minutesBefore in -10..2 && lastNotifiedExact != todayDate) {
                 val name = if (isAr) (arabicNames[prayer] ?: prayer.name) else prayer.name
                 val motivation = PRAYER_MOTIVATIONS[prayer] ?: ""
                 showNotification(

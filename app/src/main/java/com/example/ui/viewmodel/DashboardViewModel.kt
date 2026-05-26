@@ -702,6 +702,11 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             repository.insertIdea(encryptedEntity)
 
             _forgeBlueprint.value = generatedBlueprint
+            
+            // Auto-open Vault after saving to show the new idea
+            delay(500)
+            _isForgePanelOpen.value = false
+            _isVaultViewOpen.value = true
         }
     }
 
