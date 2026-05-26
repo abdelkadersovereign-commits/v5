@@ -66,6 +66,7 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -112,7 +113,11 @@ import androidx.compose.animation.core.animateValue
 import androidx.browser.customtabs.CustomTabsIntent
 import android.net.Uri
 import android.content.Intent
+import android.app.Activity
+import android.content.pm.ActivityInfo
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
+import android.content.res.Configuration
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
@@ -1414,6 +1419,14 @@ fun DashboardScreen(
 
         // Desktop Mode Overlay
         if (isDesktopModeOpen) {
+            val activity = LocalContext.current as? Activity
+            DisposableEffect(Unit) {
+                activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
+                onDispose {
+                    activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                }
+            }
+
             DesktopModeScreen(
                 prayerName = nextPrayerName,
                 prayerTime = nextPrayerTime,
@@ -2931,6 +2944,9 @@ fun DesktopModeScreen(
     isOnline: Boolean = true,
     onClose: () -> Unit
 ) {
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
     val calendar = Calendar.getInstance()
     val dayNames = listOf("الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت")
     val monthNames = listOf("يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر")
@@ -3000,15 +3016,14 @@ fun DesktopModeScreen(
     }
 
     // ===== ROOT MODAL CONTAINER — FULLY OPAQUE =====
-    // Use a separate full-screen black backdrop first so NOTHING underneath shows through.
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF000308))
-            .pointerInput(Unit) { detectTapGestures { } }, // Consume any touches passing through
+            .pointerInput(Unit) { detectTapGestures { } },
         contentAlignment = Alignment.Center
     ) {
-        // Solid deep-space gradient layer (fully opaque)
+        // Solid deep-space gradient layer
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -3037,24 +3052,7 @@ fun DesktopModeScreen(
             }
         }
 
-        // Thin connection-status accent border (subtle frame)
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .border(
-                    width = 1.dp,
-                    brush = Brush.verticalGradient(
-                        listOf(
-                            accentColor.copy(alpha = 0.5f),
-                            Color.Transparent,
-                            accentColor.copy(alpha = 0.5f)
-                        )
-                    ),
-                    shape = RoundedCornerShape(0.dp)
-                )
-        )
-
-        // Close button (top-start) + Connection status badge (top-end)
+        // Close button & Connection status
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -3096,192 +3094,321 @@ fun DesktopModeScreen(
         }
 
         // ===== MAIN CONTENT =====
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .padding(horizontal = 24.dp, vertical = 56.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically)
-        ) {
-            // Rotating ring around the BIG digital time (showpiece)
-            Box(
+        if (isLandscape) {
+            Row(
                 modifier = Modifier
-                    .size(280.dp),
-                contentAlignment = Alignment.Center
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 32.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(40.dp, Alignment.CenterHorizontally)
             ) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val radius = size.minDimension / 2f - 6f
-                    val center = Offset(size.width / 2f, size.height / 2f)
-                    // Outer rotating decorative ring
-                    rotate(ringRotation, pivot = center) {
+                // Left Side: Big Clock
+                Box(
+                    modifier = Modifier.size(300.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val radius = size.minDimension / 2f - 6f
+                        val center = Offset(size.width / 2f, size.height / 2f)
+                        rotate(ringRotation, pivot = center) {
+                            drawCircle(
+                                color = accentColor.copy(alpha = 0.20f),
+                                radius = radius,
+                                center = center,
+                                style = Stroke(width = 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 16f), 0f))
+                            )
+                        }
                         drawCircle(
-                            color = accentColor.copy(alpha = 0.20f),
-                            radius = radius,
+                            color = accentColor.copy(alpha = 0.35f),
+                            radius = radius - 18f,
                             center = center,
-                            style = Stroke(width = 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 16f), 0f))
+                            style = Stroke(width = 0.7f)
                         )
                     }
-                    // Inner static ring
-                    drawCircle(
-                        color = accentColor.copy(alpha = 0.35f),
-                        radius = radius - 18f,
-                        center = center,
-                        style = Stroke(width = 0.7f)
-                    )
-                    // Glow halo
-                    drawCircle(
-                        color = accentColor.copy(alpha = 0.08f * pulseBright),
-                        radius = radius - 30f,
-                        center = center
-                    )
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = currentTime,
-                        color = accentColor,
-                        fontSize = 58.sp,
-                        fontWeight = FontWeight.ExtraLight,
-                        fontFamily = FontFamily.Monospace,
-                        letterSpacing = 4.sp,
-                        style = TextStyle(
-                            shadow = androidx.compose.ui.graphics.Shadow(
-                                color = accentColor.copy(alpha = 0.55f),
-                                blurRadius = 28f
-                            )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = currentTime,
+                            color = accentColor,
+                            fontSize = 64.sp,
+                            fontWeight = FontWeight.ExtraLight,
+                            fontFamily = FontFamily.Monospace,
+                            letterSpacing = 4.sp,
+                            style = TextStyle(shadow = androidx.compose.ui.graphics.Shadow(color = accentColor.copy(alpha = 0.55f), blurRadius = 30f))
                         )
-                    )
-                    Text(
-                        text = currentSeconds,
-                        color = accentColor.copy(alpha = 0.55f),
-                        fontSize = 14.sp,
-                        fontFamily = FontFamily.Monospace,
-                        letterSpacing = 6.sp
-                    )
-                }
-            }
-
-            // Date strip
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = dateString,
-                    color = Color.White.copy(alpha = 0.85f),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Light,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = hijriString,
-                    color = AmberZen.copy(alpha = 0.75f),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Light,
-                    textAlign = TextAlign.Center
-                )
-            }
-
-            // Next prayer pill
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(0.92f)
-                    .border(0.75.dp, accentColor.copy(alpha = 0.35f), RoundedCornerShape(18.dp))
-                    .background(accentColor.copy(alpha = 0.05f), RoundedCornerShape(18.dp))
-                    .padding(horizontal = 18.dp, vertical = 14.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = if (isAr) "الصلاة القادمة" else "NEXT PRAYER",
-                    color = accentColor.copy(alpha = 0.55f),
-                    fontSize = 9.sp,
-                    fontFamily = FontFamily.Monospace,
-                    letterSpacing = 3.sp
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = arabicPrayerName,
-                        color = AmberZen,
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Normal,
-                        style = TextStyle(
-                            shadow = androidx.compose.ui.graphics.Shadow(
-                                color = AmberZen.copy(alpha = 0.5f),
-                                blurRadius = 16f
-                            )
+                        Text(
+                            text = currentSeconds,
+                            color = accentColor.copy(alpha = 0.55f),
+                            fontSize = 16.sp,
+                            fontFamily = FontFamily.Monospace,
+                            letterSpacing = 6.sp
                         )
-                    )
-                    Text(
-                        text = prayerTime,
-                        color = Color.White,
-                        fontSize = 22.sp,
-                        fontFamily = FontFamily.Monospace,
-                        letterSpacing = 1.sp
-                    )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = dateString,
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Light,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = hijriString,
+                            color = AmberZen.copy(alpha = 0.75f),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Light,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .background(AmberZen.copy(alpha = pulseBright), RoundedCornerShape(50))
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = prayerCountdown,
-                        color = AmberZen.copy(alpha = 0.9f),
-                        fontSize = 14.sp,
-                        fontFamily = FontFamily.Monospace,
-                        letterSpacing = 1.sp
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isAr) "متبقي" else "REMAINING",
-                        color = Color.White.copy(alpha = 0.4f),
-                        fontSize = 9.sp,
-                        fontFamily = FontFamily.Monospace,
-                        letterSpacing = 1.sp
-                    )
-                }
-            }
 
-            // All Prayer Times grid
-            if (allPrayerTimes.isNotEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.92f)
-                        .background(Color.White.copy(alpha = 0.025f), RoundedCornerShape(14.dp))
-                        .border(0.5.dp, accentColor.copy(alpha = 0.18f), RoundedCornerShape(14.dp))
-                        .padding(vertical = 14.dp, horizontal = 10.dp)
+                // Right Side: Prayer Info
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    val prayerList = listOf("الفجر", "الشروق", "الظهر", "العصر", "المغرب", "العشاء")
+                    // Next prayer pill
                     Column(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(0.75.dp, accentColor.copy(alpha = 0.35f), RoundedCornerShape(18.dp))
+                            .background(accentColor.copy(alpha = 0.05f), RoundedCornerShape(18.dp))
+                            .padding(horizontal = 20.dp, vertical = 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        Text(
+                            text = if (isAr) "الصلاة القادمة" else "NEXT PRAYER",
+                            color = accentColor.copy(alpha = 0.55f),
+                            fontSize = 10.sp,
+                            fontFamily = FontFamily.Monospace,
+                            letterSpacing = 3.sp
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            prayerList.take(3).forEach { name ->
-                                PrayerItem(name, allPrayerTimes[name] ?: "--:--", isAr, name == arabicPrayerName)
+                            Text(
+                                text = arabicPrayerName,
+                                color = AmberZen,
+                                fontSize = 32.sp,
+                                fontWeight = FontWeight.Normal,
+                                style = TextStyle(shadow = androidx.compose.ui.graphics.Shadow(color = AmberZen.copy(alpha = 0.5f), blurRadius = 16f))
+                            )
+                            Text(
+                                text = prayerTime,
+                                color = Color.White,
+                                fontSize = 28.sp,
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = 1.sp
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Box(modifier = Modifier.size(6.dp).background(AmberZen.copy(alpha = pulseBright), RoundedCornerShape(50)))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = prayerCountdown,
+                                color = AmberZen.copy(alpha = 0.9f),
+                                fontSize = 16.sp,
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = 1.sp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (isAr) "متبقي" else "REMAINING",
+                                color = Color.White.copy(alpha = 0.4f),
+                                fontSize = 10.sp,
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = 1.sp
+                            )
+                        }
+                    }
+
+                    // Prayer grid
+                    if (allPrayerTimes.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.White.copy(alpha = 0.025f), RoundedCornerShape(14.dp))
+                                .border(0.5.dp, accentColor.copy(alpha = 0.18f), RoundedCornerShape(14.dp))
+                                .padding(vertical = 12.dp, horizontal = 12.dp)
+                        ) {
+                            val prayerList = listOf("الفجر", "الشروق", "الظهر", "العصر", "المغرب", "العشاء")
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                prayerList.forEach { name ->
+                                    PrayerItem(name, allPrayerTimes[name] ?: "--:--", isAr, name == arabicPrayerName)
+                                }
                             }
                         }
-                        Spacer(modifier = Modifier.height(14.dp))
-                        Row(
+                    }
+                }
+            }
+        } else {
+            // Portrait Layout (Enhanced for full screen)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 24.dp, vertical = 40.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(30.dp, Alignment.CenterVertically)
+            ) {
+                // Rotating ring & Clock
+                Box(
+                    modifier = Modifier.size(320.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val radius = size.minDimension / 2f - 6f
+                        val center = Offset(size.width / 2f, size.height / 2f)
+                        rotate(ringRotation, pivot = center) {
+                            drawCircle(
+                                color = accentColor.copy(alpha = 0.20f),
+                                radius = radius,
+                                center = center,
+                                style = Stroke(width = 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 16f), 0f))
+                            )
+                        }
+                        drawCircle(
+                            color = accentColor.copy(alpha = 0.35f),
+                            radius = radius - 18f,
+                            center = center,
+                            style = Stroke(width = 0.7f)
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = currentTime,
+                            color = accentColor,
+                            fontSize = 72.sp,
+                            fontWeight = FontWeight.ExtraLight,
+                            fontFamily = FontFamily.Monospace,
+                            letterSpacing = 4.sp,
+                            style = TextStyle(shadow = androidx.compose.ui.graphics.Shadow(color = accentColor.copy(alpha = 0.55f), blurRadius = 30f))
+                        )
+                        Text(
+                            text = currentSeconds,
+                            color = accentColor.copy(alpha = 0.55f),
+                            fontSize = 18.sp,
+                            fontFamily = FontFamily.Monospace,
+                            letterSpacing = 6.sp
+                        )
+                    }
+                }
+
+                // Date strip
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = dateString,
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Light,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = hijriString,
+                        color = AmberZen.copy(alpha = 0.75f),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Light,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                // Next prayer pill
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(0.95f)
+                        .border(0.75.dp, accentColor.copy(alpha = 0.35f), RoundedCornerShape(18.dp))
+                        .background(accentColor.copy(alpha = 0.05f), RoundedCornerShape(18.dp))
+                        .padding(horizontal = 24.dp, vertical = 20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = if (isAr) "الصلاة القادمة" else "NEXT PRAYER",
+                        color = accentColor.copy(alpha = 0.55f),
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = 3.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = arabicPrayerName,
+                            color = AmberZen,
+                            fontSize = 36.sp,
+                            fontWeight = FontWeight.Normal,
+                            style = TextStyle(shadow = androidx.compose.ui.graphics.Shadow(color = AmberZen.copy(alpha = 0.5f), blurRadius = 16f))
+                        )
+                        Text(
+                            text = prayerTime,
+                            color = Color.White,
+                            fontSize = 32.sp,
+                            fontFamily = FontFamily.Monospace,
+                            letterSpacing = 1.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Box(modifier = Modifier.size(8.dp).background(AmberZen.copy(alpha = pulseBright), RoundedCornerShape(50)))
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = prayerCountdown,
+                            color = AmberZen.copy(alpha = 0.9f),
+                            fontSize = 18.sp,
+                            fontFamily = FontFamily.Monospace,
+                            letterSpacing = 1.sp
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = if (isAr) "متبقي" else "REMAINING",
+                            color = Color.White.copy(alpha = 0.4f),
+                            fontSize = 11.sp,
+                            fontFamily = FontFamily.Monospace,
+                            letterSpacing = 1.sp
+                        )
+                    }
+                }
+
+                // All Prayer Times grid
+                if (allPrayerTimes.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.95f)
+                            .background(Color.White.copy(alpha = 0.025f), RoundedCornerShape(14.dp))
+                            .border(0.5.dp, accentColor.copy(alpha = 0.18f), RoundedCornerShape(14.dp))
+                            .padding(vertical = 20.dp, horizontal = 12.dp)
+                    ) {
+                        val prayerList = listOf("الفجر", "الشروق", "الظهر", "العصر", "المغرب", "العشاء")
+                        Column(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            prayerList.drop(3).forEach { name ->
-                                PrayerItem(name, allPrayerTimes[name] ?: "--:--", isAr, name == arabicPrayerName)
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                                prayerList.take(3).forEach { name -> PrayerItem(name, allPrayerTimes[name] ?: "--:--", isAr, name == arabicPrayerName) }
+                            }
+                            Spacer(modifier = Modifier.height(20.dp))
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                                prayerList.drop(3).forEach { name -> PrayerItem(name, allPrayerTimes[name] ?: "--:--", isAr, name == arabicPrayerName) }
                             }
                         }
                     }
