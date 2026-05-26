@@ -13,12 +13,7 @@ import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.compose.animation.*
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,7 +34,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.work.*
 import com.example.worker.NotificationWorker
 import java.util.concurrent.TimeUnit
-import com.example.ui.screens.SettingsScreen
+import com.example.ui.screens.* 
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
@@ -49,20 +44,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.ui.screens.DashboardScreen
-import com.example.ui.screens.AcademyScreen
-import com.example.ui.screens.ResourcesScreen
-import com.example.ui.screens.SplashScreen
-import com.example.ui.screens.LinkScannerScreen
-import com.example.ui.screens.AboutScreen
-import com.example.ui.screens.CyberGlossaryScreen
-import com.example.ui.screens.SecurityChecklistScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.CyberCyan
-import com.example.ui.theme.AmberZen
 import com.example.ui.theme.VoidBlack
 import com.example.ui.viewmodel.DashboardViewModel
-
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 
@@ -71,25 +56,22 @@ class MainActivity : FragmentActivity() {
   private var isAuthInProgress = false
   private var hasRequestedPermissions = false
 
-  // Runtime permission launcher
   private val permissionLauncher = registerForActivityResult(
     ActivityResultContracts.RequestMultiplePermissions()
-  ) { _ -> /* Permissions handled */ }
+  ) { /* Permissions handled */ }
 
-  fun requestEssentialPermissions() {
+  private fun requestEssentialPermissions() {
     val needed = mutableListOf<String>()
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-      if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-        != PackageManager.PERMISSION_GRANTED) {
-        needed.add(Manifest.permission.POST_NOTIFICATIONS)
-      }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            needed.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
-    if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-      != PackageManager.PERMISSION_GRANTED) {
-      needed.add(Manifest.permission.ACCESS_FINE_LOCATION)
+    if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        needed.add(Manifest.permission.ACCESS_FINE_LOCATION)
     }
     if (needed.isNotEmpty()) {
-      permissionLauncher.launch(needed.toTypedArray())
+        permissionLauncher.launch(needed.toTypedArray())
     }
   }
 
@@ -97,15 +79,8 @@ class MainActivity : FragmentActivity() {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
 
-    // Initialize Sovereign Pulse Protocol - Running every 15 minutes for better precision
-    val workRequest = PeriodicWorkRequestBuilder<NotificationWorker>(15, TimeUnit.MINUTES)
-      .setInitialDelay(1, TimeUnit.MINUTES)
-      .build()
-    WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
-      "sovereign_pulse",
-      ExistingPeriodicWorkPolicy.REPLACE, // Use REPLACE to ensure the new frequency is applied
-      workRequest
-    )
+    val workRequest = PeriodicWorkRequestBuilder<NotificationWorker>(15, TimeUnit.MINUTES).build()
+    WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork("sovereign_pulse", ExistingPeriodicWorkPolicy.KEEP, workRequest)
 
     setContent {
       MyApplicationTheme(darkTheme = true, dynamicColor = false) {
@@ -114,105 +89,60 @@ class MainActivity : FragmentActivity() {
           val vm: DashboardViewModel = viewModel()
           val prayerVm: com.example.ui.viewmodel.PrayerViewModel = viewModel()
           val isAr by vm.isArabic.collectAsState()
+          val calibrationCompleted by vm.calibrationCompleted.collectAsState()
+          val customApiKey by vm.customApiKey.collectAsState()
 
           fun triggerBiometricAuth(title: String, subtitle: String, onSuccess: () -> Unit, closeOnCancel: Boolean = false) {
             if (isAuthInProgress) return
-
             val biometricManager = BiometricManager.from(this@MainActivity)
-            val canAuth = biometricManager.canAuthenticate(
-              BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
-            )
-
-            if (canAuth != BiometricManager.BIOMETRIC_SUCCESS) {
-              isSessionAuthenticated = true
-              onSuccess()
-              return
+            if (biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL) != BiometricManager.BIOMETRIC_SUCCESS) {
+              isSessionAuthenticated = true; onSuccess(); return
             }
-
             isAuthInProgress = true
             val executor = ContextCompat.getMainExecutor(this@MainActivity)
             val biometricPrompt = BiometricPrompt(this@MainActivity, executor,
               object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                  super.onAuthenticationError(errorCode, errString)
                   isAuthInProgress = false
-                  when (errorCode) {
-                    BiometricPrompt.ERROR_USER_CANCELED,
-                    BiometricPrompt.ERROR_NEGATIVE_BUTTON -> {
-                      if (closeOnCancel) finish()
-                      else Toast.makeText(applicationContext, if (isAr) "تم الإلغاء" else "Cancelled", Toast.LENGTH_SHORT).show()
-                    }
-                    BiometricPrompt.ERROR_CANCELED -> { /* System cancel, wait for next trigger */ }
-                    else -> Toast.makeText(applicationContext, "Auth Error: $errString", Toast.LENGTH_SHORT).show()
-                  }
+                  if ((errorCode == BiometricPrompt.ERROR_USER_CANCELED || errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON) && closeOnCancel) finish()
                 }
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                  super.onAuthenticationSucceeded(result)
-                  isAuthInProgress = false
-                  isSessionAuthenticated = true
-                  onSuccess()
-                }
-                override fun onAuthenticationFailed() {
-                  super.onAuthenticationFailed()
-                  // Failed attempt, prompt stays open
+                  isAuthInProgress = false; isSessionAuthenticated = true; onSuccess()
                 }
               })
-
             val promptInfo = BiometricPrompt.PromptInfo.Builder()
-              .setTitle(title)
-              .setSubtitle(subtitle)
-              .setAllowedAuthenticators(
-                BiometricManager.Authenticators.BIOMETRIC_STRONG or
-                BiometricManager.Authenticators.DEVICE_CREDENTIAL
-              )
-              .build()
-
+              .setTitle(title).setSubtitle(subtitle)
+              .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL).build()
             biometricPrompt.authenticate(promptInfo)
           }
 
-          fun performSystemLock() {
-            triggerBiometricAuth(
-              title = if (isAr) "تأكيد الهوية السيادية" else "SOVEREIGN IDENTITY VERIFIED",
-              subtitle = if (isAr) "مطلوب بصمة الدخول لفك تشفير النظام" else "Biometric uplink required to decrypt system",
-              onSuccess = {
-                Toast.makeText(applicationContext, "Neural Interface Unlocked", Toast.LENGTH_SHORT).show()
-                // Permissions requested on next ON_RESUME to avoid ActivityResultLauncher state issues
-              },
-              closeOnCancel = true
-            )
-          }
-          
           DisposableEffect(Unit) {
             val observer = LifecycleEventObserver { _, event ->
               when (event) {
                 Lifecycle.Event.ON_START -> {
                   if (!isSessionAuthenticated && !isAuthInProgress) {
-                    performSystemLock()
+                    triggerBiometricAuth(if (isAr) "تأكيد الهوية" else "Identity Verified", if (isAr) "مطلوب بصمة الدخول" else "Biometric uplink required", { }, true)
                   }
                 }
                 Lifecycle.Event.ON_RESUME -> {
                   vm.startSensors()
                   if (isSessionAuthenticated) {
                     prayerVm.updateLocation()
-                    if (!hasRequestedPermissions) {
-                      hasRequestedPermissions = true
-                      requestEssentialPermissions()
-                    }
+                    if (!hasRequestedPermissions) { hasRequestedPermissions = true; requestEssentialPermissions() }
                   }
                 }
-                Lifecycle.Event.ON_STOP -> { }
                 Lifecycle.Event.ON_PAUSE -> vm.stopSensors()
                 else -> {}
               }
             }
             lifecycle.addObserver(observer)
-            onDispose {
-              lifecycle.removeObserver(observer)
-            }
+            onDispose { lifecycle.removeObserver(observer) }
           }
 
-          LaunchedEffect(Unit) {
-            Toast.makeText(applicationContext, "Neural Link Established", Toast.LENGTH_SHORT).show()
+          val startDestination = when {
+              customApiKey.isBlank() -> "settings"
+              !calibrationCompleted -> "calibration"
+              else -> "dashboard"
           }
 
           NavHost(
@@ -222,11 +152,16 @@ class MainActivity : FragmentActivity() {
             exitTransition = { fadeOut(animationSpec = tween(700)) }
           ) {
             composable("splash") {
-              SplashScreen(onNavigateToDashboard = {
-                navController.navigate("dashboard") {
-                  popUpTo("splash") { inclusive = true }
-                }
-              })
+                SplashScreen(onNavigate = {
+                    navController.navigate(startDestination) {
+                        popUpTo("splash") { inclusive = true }
+                    }
+                })
+            }
+            composable("calibration") {
+                CalibrationScreen(viewModel = vm, onCalibrationComplete = {
+                    navController.navigate("dashboard") { popUpTo("calibration") { inclusive = true } }
+                })
             }
             composable("dashboard") {
               val isAr by vm.isArabic.collectAsState()
@@ -235,238 +170,70 @@ class MainActivity : FragmentActivity() {
 
               val isAcademyOpen by vm.isAcademyOpen.collectAsState()
               val isResourcesOpen by vm.isResourcesOpen.collectAsState()
-              val isSettingsOpen by vm.isSettingsOpen.collectAsState()
 
-              LaunchedEffect(isAcademyOpen) {
-                if (isAcademyOpen) {
-                  activeTab = "academy"
-                  vm.setAcademyOpen(false) 
-                }
-              }
+              LaunchedEffect(isAcademyOpen) { if (isAcademyOpen) { activeTab = "academy"; vm.setAcademyOpen(false) } }
+              LaunchedEffect(isResourcesOpen) { if (isResourcesOpen) { activeTab = "resources"; vm.setResourcesOpen(false) } }
 
-              LaunchedEffect(isResourcesOpen) {
-                if (isResourcesOpen) {
-                  activeTab = "resources"
-                  vm.setResourcesOpen(false) 
-                }
-              }
-
-              val currentLayoutDirection = if (isAr) LayoutDirection.Rtl else LayoutDirection.Ltr
-              CompositionLocalProvider(LocalLayoutDirection provides currentLayoutDirection) {
+              CompositionLocalProvider(LocalLayoutDirection provides if (isAr) LayoutDirection.Rtl else LayoutDirection.Ltr) {
                 Scaffold(
                   modifier = Modifier.fillMaxSize(),
                   containerColor = VoidBlack,
                   contentWindowInsets = WindowInsets(0, 0, 0, 0),
-                  bottomBar = {
-                    val infiniteTransition = rememberInfiniteTransition(label = "bottomBarGlow")
-                    val glowAlpha by infiniteTransition.animateFloat(
-                      initialValue = 0.1f,
-                      targetValue = 0.4f,
-                      animationSpec = infiniteRepeatable(
-                        animation = tween(2000, easing = LinearEasing),
-                        repeatMode = RepeatMode.Reverse
-                      ),
-                      label = "glowAlpha"
-                    )
-
-                    NavigationBar(
-                      containerColor = Color(0xFF04070D).copy(alpha = 0.95f),
-                      tonalElevation = 8.dp,
-                      windowInsets = WindowInsets.navigationBars,
-                      modifier = Modifier
-                        .border(
-                          width = 0.5.dp,
-                          color = CyberCyan.copy(alpha = glowAlpha),
-                          shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
-                        )
-                    ) {
-                      NavigationBarItem(
-                        selected = activeTab == "home",
-                        onClick = {
-                          haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                          activeTab = "home"
-                          vm.setSettingsOpen(false)
-                        },
-                        icon = { 
-                          Box(contentAlignment = Alignment.Center) {
-                            if (activeTab == "home") {
-                              Box(
-                                modifier = Modifier
-                                  .size(40.dp)
-                                  .background(CyberCyan.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
-                                  .border(1.dp, CyberCyan.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                              )
-                            }
-                            Icon(Icons.Default.Home, contentDescription = "Home", tint = if (activeTab == "home") CyberCyan else Color.White.copy(alpha = 0.4f)) 
-                          }
-                        },
-                        label = {
-                          Text(
-                            text = if (isAr) "الرئيسية" else "Home",
-                            color = if (activeTab == "home") CyberCyan else Color.White.copy(alpha = 0.4f),
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
-                          )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                          indicatorColor = CyberCyan.copy(alpha = 0.12f)
-                        )
-                      )
-
-                      NavigationBarItem(
-                        selected = activeTab == "academy",
-                        onClick = {
-                          haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                          activeTab = "academy"
-                          vm.setSettingsOpen(false)
-                        },
-                        icon = { 
-                          Box(contentAlignment = Alignment.Center) {
-                            if (activeTab == "academy") {
-                              Box(
-                                modifier = Modifier
-                                  .size(40.dp)
-                                  .background(CyberCyan.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
-                                  .border(1.dp, CyberCyan.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                              )
-                            }
-                            Icon(Icons.Default.Check, contentDescription = "Academy", tint = if (activeTab == "academy") CyberCyan else Color.White.copy(alpha = 0.4f)) 
-                          }
-                        },
-                        label = {
-                          Text(
-                            text = if (isAr) "الأكاديمية" else "Academy",
-                            color = if (activeTab == "academy") CyberCyan else Color.White.copy(alpha = 0.4f),
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
-                          )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                          indicatorColor = CyberCyan.copy(alpha = 0.12f)
-                        )
-                      )
-
-                      NavigationBarItem(
-                        selected = activeTab == "resources",
-                        onClick = {
-                          haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                          activeTab = "resources"
-                          vm.setSettingsOpen(false)
-                        },
-                        icon = { 
-                          Box(contentAlignment = Alignment.Center) {
-                            if (activeTab == "resources") {
-                              Box(
-                                modifier = Modifier
-                                  .size(40.dp)
-                                  .background(CyberCyan.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
-                                  .border(1.dp, CyberCyan.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                              )
-                            }
-                            Icon(Icons.Default.Search, contentDescription = "Resources", tint = if (activeTab == "resources") CyberCyan else Color.White.copy(alpha = 0.4f)) 
-                          }
-                        },
-                        label = {
-                          Text(
-                            text = if (isAr) "المصادر" else "Resources",
-                            color = if (activeTab == "resources") CyberCyan else Color.White.copy(alpha = 0.4f),
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
-                          )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                          indicatorColor = CyberCyan.copy(alpha = 0.12f)
-                        )
-                      )
-
-                      NavigationBarItem(
-                        selected = activeTab == "settings",
-                        onClick = {
-                          haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                          activeTab = "settings"
-                          vm.setSettingsOpen(true)
-                        },
-                        icon = { 
-                          Box(contentAlignment = Alignment.Center) {
-                            if (activeTab == "settings") {
-                              Box(
-                                modifier = Modifier
-                                  .size(40.dp)
-                                  .background(CyberCyan.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
-                                  .border(1.dp, CyberCyan.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                              )
-                            }
-                            Icon(Icons.Default.Settings, contentDescription = "Settings", tint = if (activeTab == "settings") CyberCyan else Color.White.copy(alpha = 0.4f)) 
-                          }
-                        },
-                        label = {
-                          Text(
-                            text = if (isAr) "الإعدادات" else "Settings",
-                            color = if (activeTab == "settings") CyberCyan else Color.White.copy(alpha = 0.4f),
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
-                          )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                          indicatorColor = CyberCyan.copy(alpha = 0.12f)
-                        )
-                      )
-                    }
-                  }
+                  bottomBar = { BottomNavBar(isAr, activeTab) { newTab -> activeTab = newTab; vm.setSettingsOpen(newTab == "settings") } }
                 ) { innerPadding ->
                   Box(modifier = Modifier.padding(innerPadding)) {
                     when (activeTab) {
-                      "home" -> DashboardScreen(
-                        viewModel = vm,
-                        prayerViewModel = prayerVm,
-                        onNavigateToScanner = { navController.navigate("link_scanner") },
-                        onVaultLockRequest = { title, sub, onOk -> 
-                           triggerBiometricAuth(title, sub, onOk)
-                        }
-                      )
-                      "academy" -> AcademyScreen(
-                        viewModel = vm,
-                        onNavigateToGlossary = { navController.navigate("glossary") },
-                        onNavigateToChecklist = { navController.navigate("checklist") }
-                      )
-                      "resources" -> ResourcesScreen(
-                        viewModel = vm,
-                        onClose = { activeTab = "home" }
-                      )
-                      "settings" -> SettingsScreen(
-                        viewModel = vm,
-                        onClose = { activeTab = "home" },
-                        onOpenAbout = { navController.navigate("about") },
-                        onLockRequest = { title, sub, onOk ->
-                           triggerBiometricAuth(title, sub, onOk)
-                        }
-                      )
+                      "home" -> DashboardScreen(vm, prayerVm, { navController.navigate("link_scanner") }) { title, sub, onOk -> triggerBiometricAuth(title, sub, onOk) }
+                      "academy" -> AcademyScreen(vm, { navController.navigate("glossary") }, { navController.navigate("checklist") })
+                      "resources" -> ResourcesScreen(vm) { activeTab = "home" }
+                      "settings" -> SettingsScreen(vm, { activeTab = "home" }, { navController.navigate("about") }) { title, sub, onOk -> triggerBiometricAuth(title, sub, onOk) }
                     }
                   }
                 }
               }
             }
-            composable("link_scanner") { LinkScannerScreen(viewModel = vm, onBack = { navController.popBackStack() }) }
-            composable("about") { AboutScreen(onBack = { navController.popBackStack() }) }
-            composable("glossary") {
-              CyberGlossaryScreen(
-                viewModel = vm,
-                onBack = { navController.popBackStack() }
-              )
-            }
-            composable("checklist") {
-              SecurityChecklistScreen(
-                viewModel = vm,
-                onBack = { navController.popBackStack() }
-              )
-            }
+            composable("link_scanner") { LinkScannerScreen(vm) { navController.popBackStack() } }
+            composable("about") { AboutScreen { navController.popBackStack() } }
+            composable("glossary") { CyberGlossaryScreen(vm) { navController.popBackStack() } }
+            composable("checklist") { SecurityChecklistScreen(vm) { navController.popBackStack() } }
           }
         }
       }
     }
   }
+}
+
+@Composable
+private fun BottomNavBar(isAr: Boolean, activeTab: String, onTabSelected: (String) -> Unit) {
+    NavigationBar(
+        containerColor = Color(0xFF04070D).copy(alpha = 0.95f),
+        tonalElevation = 8.dp,
+        windowInsets = WindowInsets.navigationBars,
+    ) {
+        val haptic = LocalHapticFeedback.current
+        val tabs = listOf(
+            "home" to if (isAr) "الرئيسية" else "Home",
+            "academy" to if (isAr) "الأكاديمية" else "Academy",
+            "resources" to if (isAr) "المصادر" else "Resources",
+            "settings" to if (isAr) "الإعدادات" else "Settings"
+        )
+        val icons = mapOf("home" to Icons.Default.Home, "academy" to Icons.Default.Check, "resources" to Icons.Default.Search, "settings" to Icons.Default.Settings)
+
+        tabs.forEach { (key, title) ->
+            NavigationBarItem(
+                selected = activeTab == key,
+                onClick = { haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove); onTabSelected(key) },
+                icon = { 
+                    Box(contentAlignment = Alignment.Center) {
+                        if (activeTab == key) {
+                            Box(modifier = Modifier.size(40.dp).background(CyberCyan.copy(alpha = 0.1f), RoundedCornerShape(12.dp)).border(1.dp, CyberCyan.copy(alpha = 0.4f), RoundedCornerShape(12.dp)))
+                        }
+                        Icon(icons[key]!!, contentDescription = title, tint = if (activeTab == key) CyberCyan else Color.White.copy(alpha = 0.4f)) 
+                    }
+                },
+                label = { Text(title, color = if (activeTab == key) CyberCyan else Color.White.copy(alpha = 0.4f), fontSize = 9.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace) },
+                colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent)
+            )
+        }
+    }
 }

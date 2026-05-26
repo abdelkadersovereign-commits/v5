@@ -22,6 +22,11 @@ class SovereignDataStore(private val context: Context) {
         val STEALTH_MODE = booleanPreferencesKey("stealth_mode")
         val CYBER_SCORE = intPreferencesKey("cyber_score")
         val NEURAL_PROXY = booleanPreferencesKey("neural_proxy")
+        
+        // Keys for User Cognitive Model
+        val USER_LEVEL = stringPreferencesKey("user_level")
+        val USER_INTERESTS = stringSetPreferencesKey("user_interests")
+        val CALIBRATION_COMPLETED = booleanPreferencesKey("calibration_completed")
     }
 
     val operatorName: Flow<String> = context.dataStore.data.map { it[OPERATOR_NAME] ?: "Sovereign_Operator" }
@@ -34,6 +39,12 @@ class SovereignDataStore(private val context: Context) {
     val stealthMode: Flow<Boolean> = context.dataStore.data.map { it[STEALTH_MODE] ?: false }
     val cyberScore: Flow<Int> = context.dataStore.data.map { it[CYBER_SCORE] ?: 0 }
     val neuralProxy: Flow<Boolean> = context.dataStore.data.map { it[NEURAL_PROXY] ?: false }
+
+    // Flows for User Cognitive Model
+    val userLevel: Flow<String> = context.dataStore.data.map { it[USER_LEVEL] ?: "Beginner" }
+    val userInterests: Flow<Set<String>> = context.dataStore.data.map { it[USER_INTERESTS] ?: emptySet() }
+    val calibrationCompleted: Flow<Boolean> = context.dataStore.data.map { it[CALIBRATION_COMPLETED] ?: false }
+
 
     suspend fun saveOperatorName(name: String) {
         context.dataStore.edit { it[OPERATOR_NAME] = name }
@@ -73,5 +84,18 @@ class SovereignDataStore(private val context: Context) {
 
     suspend fun saveNeuralProxy(isProxy: Boolean) {
         context.dataStore.edit { it[NEURAL_PROXY] = isProxy }
+    }
+
+    // Functions to save User Cognitive Model
+    suspend fun saveUserLevel(level: String) {
+        context.dataStore.edit { it[USER_LEVEL] = level }
+    }
+
+    suspend fun saveUserInterests(interests: Set<String>) {
+        context.dataStore.edit { it[USER_INTERESTS] = interests }
+    }
+
+    suspend fun saveCalibrationCompleted(completed: Boolean) {
+        context.dataStore.edit { it[CALIBRATION_COMPLETED] = completed }
     }
 }
