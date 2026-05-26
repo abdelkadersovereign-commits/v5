@@ -404,7 +404,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 return@launch
             }
             try {
-                withContext(kotlinx.coroutines.time.withTimeout(15000.toDuration(TimeUnit.MILLISECONDS))) {
+                kotlinx.coroutines.withTimeout(15000L) {
                     generateContentSafely("ping")
                 }
                 _isNeuralLinkOffline.value = false

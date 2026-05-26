@@ -16,7 +16,6 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -153,7 +152,7 @@ class MainActivity : FragmentActivity() {
             exitTransition = { fadeOut(animationSpec = tween(700)) }
           ) {
             composable("splash") {
-                SplashScreen(onNavigate = {
+                SplashScreen(onNavigateToDashboard = {
                     navController.navigate(startDestination) {
                         popUpTo("splash") { inclusive = true }
                     }
@@ -183,7 +182,14 @@ class MainActivity : FragmentActivity() {
                 ) { innerPadding ->
                   Box(modifier = Modifier.padding(innerPadding)) {
                     when (activeTab) {
-                      "home" -> DashboardScreen(vm, prayerVm, { navController.navigate("link_scanner") }) { title, sub, onOk -> triggerBiometricAuth(title, sub, onOk) }
+                      "home" -> DashboardScreen(
+                        viewModel = vm,
+                        prayerViewModel = prayerVm,
+                        onNavigateToScanner = { navController.navigate("link_scanner") },
+                        onVaultLockRequest = { title, sub, onOk -> 
+                           triggerBiometricAuth(title, sub, onOk)
+                        }
+                      )
                       "academy" -> AcademyScreen(vm, { navController.navigate("glossary") }, { navController.navigate("checklist") })
                       "resources" -> ResourcesScreen(vm) { activeTab = "home" }
                       "settings" -> SettingsScreen(vm, { activeTab = "home" }, { navController.navigate("about") }) { title, sub, onOk -> triggerBiometricAuth(title, sub, onOk) }
