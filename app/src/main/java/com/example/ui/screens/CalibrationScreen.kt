@@ -14,6 +14,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.theme.AmberZen
+import com.example.ui.theme.CyberCyan
+import com.example.ui.theme.VoidBlack
 import com.example.ui.theme.cascadiaCode
 import com.example.ui.viewmodel.DashboardViewModel
 
@@ -55,14 +58,14 @@ fun CalibrationScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.9f))
+            .background(VoidBlack.copy(alpha = 0.9f))
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text(
             text = if (isArabic) "معايرة النظام" else "System Calibration",
-            color = Color(0xFF00FFAA),
+            color = CyberCyan,
             fontSize = 28.sp,
             fontFamily = cascadiaCode,
             fontWeight = FontWeight.Bold
@@ -78,7 +81,7 @@ fun CalibrationScreen(
         // Level Selection
         Text(
             text = if (isArabic) "المستوى" else "Level",
-            color = Color(0xFF00FFAA),
+            color = CyberCyan,
             fontSize = 20.sp,
             fontFamily = cascadiaCode,
             fontWeight = FontWeight.SemiBold,
@@ -104,7 +107,7 @@ fun CalibrationScreen(
         // Interest Selection
         Text(
             text = if (isArabic) "الاهتمامات (اختر حتى 3)" else "Interests (Choose up to 3)",
-            color = Color(0xFF00FFAA),
+            color = CyberCyan,
             fontSize = 20.sp,
             fontFamily = cascadiaCode,
             fontWeight = FontWeight.SemiBold,
@@ -143,9 +146,9 @@ fun CalibrationScreen(
             modifier = Modifier
                 .fillMaxWidth(0.7f)
                 .clip(RoundedCornerShape(8.dp))
-                .background(Color(0xFF00FFAA))
+                .background(CyberCyan)
                 .clickable {
-                    //viewModel.saveCalibrationData(selectedLevel, selectedInterests.toSet())
+                    viewModel.saveCalibrationData(selectedLevel, selectedInterests.toSet())
                     onCalibrationComplete()
                 }
                 .padding(12.dp)
@@ -168,9 +171,9 @@ fun Chip(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val backgroundColor = if (selected) Color(0xFF00FFAA) else Color.Transparent
+    val backgroundColor = if (selected) CyberCyan else Color.Transparent
     val textColor = if (selected) Color.Black else Color.White
-    val borderColor = if (selected) Color(0xFF00FFAA) else Color.White
+    val borderColor = if (selected) CyberCyan else Color.White
 
     Box(
         modifier = Modifier
