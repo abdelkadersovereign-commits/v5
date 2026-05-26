@@ -481,7 +481,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             _isThinking.value = true
             val generatedBlueprint = "[ ALERT ] Neural Blueprinting is offline. Local Encryption protocol used instead."
             _isThinking.value = false
-            val encryptedEntity = InventorIdea.createEncrypted(title, category, ideaRaw, generatedBlueprint)
+            val encryptedEntity = InventorIdea.createEncrypted(title = title, category = category, originalIdea = ideaRaw, geminiBlueprint = generatedBlueprint)
             repository.insertIdea(encryptedEntity)
             _forgeBlueprint.value = generatedBlueprint
             delay(500)
@@ -627,7 +627,28 @@ Every scenario you produce MUST be on a COMPLETELY DIFFERENT situation, attack v
         }
     }
 
-    fun analyzeResourceLink(url: String) {
+    fun generateStrategicDebrief(
+          scenario: String,
+          choiceText: String,
+          useArabic: Boolean,
+          onResponse: (String) -> Unit
+      ) {
+          viewModelScope.launch {
+              try {
+                  val prompt = if (useArabic) {
+                      """أنت خبير أمن سيبراني. السيناريو: "$scenario". الاختيار: "$choiceText". قدم تحليلاً استراتيجياً موجزاً لهذا الاختيار وما إذا كان صحيحاً أم لا وكيفية التحسين."""
+                  } else {
+                      """You are a cybersecurity expert. Scenario: "$scenario". User choice: "$choiceText". Provide a concise strategic debrief of this choice — whether it was correct, why, and how to improve."""
+                  }
+                  val result = generateContentSafely(prompt)
+                  onResponse(result)
+              } catch (e: Exception) {
+                  onResponse("")
+              }
+          }
+      }
+
+      fun analyzeResourceLink(url: String) {
         viewModelScope.launch {
             _isAnalyzingLink.value = true
             _linkAnalysisResult.value = null
