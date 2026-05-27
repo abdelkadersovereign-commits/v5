@@ -27,6 +27,7 @@ class SovereignDataStore(private val context: Context) {
         val USER_LEVEL = stringPreferencesKey("user_level")
         val USER_INTERESTS = stringSetPreferencesKey("user_interests")
         val CALIBRATION_COMPLETED = booleanPreferencesKey("calibration_completed")
+        val USER_GOAL = stringPreferencesKey("user_goal")
     }
 
     val operatorName: Flow<String> = context.dataStore.data.map { it[OPERATOR_NAME] ?: "Sovereign_Operator" }
@@ -44,6 +45,7 @@ class SovereignDataStore(private val context: Context) {
     val userLevel: Flow<String> = context.dataStore.data.map { it[USER_LEVEL] ?: "Beginner" }
     val userInterests: Flow<Set<String>> = context.dataStore.data.map { it[USER_INTERESTS] ?: emptySet() }
     val calibrationCompleted: Flow<Boolean> = context.dataStore.data.map { it[CALIBRATION_COMPLETED] ?: false }
+    val userGoal: Flow<String> = context.dataStore.data.map { it[USER_GOAL] ?: "" }
 
 
     suspend fun saveOperatorName(name: String) {
@@ -97,5 +99,9 @@ class SovereignDataStore(private val context: Context) {
 
     suspend fun saveCalibrationCompleted(completed: Boolean) {
         context.dataStore.edit { it[CALIBRATION_COMPLETED] = completed }
+    }
+
+    suspend fun saveUserGoal(goal: String) {
+        context.dataStore.edit { it[USER_GOAL] = goal }
     }
 }
