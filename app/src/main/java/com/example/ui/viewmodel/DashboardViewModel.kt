@@ -244,6 +244,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val _userInterests = MutableStateFlow<Set<String>>(emptySet())
     val userInterests: StateFlow<Set<String>> = _userInterests.asStateFlow()
+    private val _userGoal = MutableStateFlow("")
+    val userGoal: StateFlow<String> = _userGoal.asStateFlow()
 
     private val _calibrationCompleted = MutableStateFlow(false)
     val calibrationCompleted: StateFlow<Boolean> = _calibrationCompleted.asStateFlow()
@@ -364,10 +366,11 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     fun setSettingsOpen(open: Boolean) { _isSettingsOpen.value = open }
 
     // --- Function to save calibration data ---
-    fun saveCalibrationData(level: String, interests: Set<String>) {
+    fun saveCalibrationData(level: String, interests: Set<String>, goal: String = "") {
         viewModelScope.launch {
             dataStore.saveUserLevel(level)
             dataStore.saveUserInterests(interests)
+            if (goal.isNotBlank()) dataStore.saveUserGoal(goal)
             dataStore.saveCalibrationCompleted(true)
         }
     }
@@ -435,6 +438,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch { dataStore.userLevel.collect { _userLevel.value = it } }
         viewModelScope.launch { dataStore.userInterests.collect { _userInterests.value = it } }
         viewModelScope.launch { dataStore.calibrationCompleted.collect { _calibrationCompleted.value = it } }
+        viewModelScope.launch { dataStore.userGoal.collect { _userGoal.value = it } }
 
         viewModelScope.launch(Dispatchers.IO) {
             try { _ipAddress.value = fetchPublicIp() } catch (_: Exception) { _ipAddress.value = extractLocalIp() }
@@ -583,10 +587,19 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     // --- NEW ADAPTIVE INTELLIGENCE --- 
                     val level = _userLevel.value
                     val interests = _userInterests.value
+                    val goal = _userGoal.value
+                    val goalLabel = when (goal) {
+                        "self_protect" -> "Protect himself/herself and family from digital threats"
+                        "career" -> "Enter the cybersecurity field professionally"
+                        "certification" -> "Pass a cybersecurity certification exam"
+                        "threat_hunting" -> "Professional threat hunting and red team operations"
+                        else -> "General cybersecurity awareness"
+                    }
                     val userProfilePrompt = """
                     USER PROFILE:
                     - Skill Level: $level
                     - Core Interests: ${if (interests.isNotEmpty()) interests.joinToString(", ") else "General Cybersecurity"}
+                    - Primary Goal: $goalLabel
                     """.trimIndent()
 
                     val topicFocus = if (interests.isNotEmpty()) interests.random() else "General Cybersecurity"
