@@ -237,31 +237,31 @@ fun SettingsScreen(
                     icon = Icons.Default.Language
                 )
 
-                // Auto-bypass is built-in via DoH DNS — no manual proxy toggle needed
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                        .border(1.dp, CyberCyan.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
-                        .background(CyberCyan.copy(alpha = 0.04f), RoundedCornerShape(8.dp))
-                        .padding(12.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Default.Shield, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(16.dp))
-                        Text(
-                            text = if (isAr)
-                                "الاتصال محمي تلقائياً — تجاوز المناطق المحظورة مدمج في النظام بدون VPN"
-                            else
-                                "Auto-protected connection — Regional bypass built-in, no VPN required",
-                            color = CyberCyan.copy(alpha = 0.8f),
-                            fontSize = 10.sp,
-                            lineHeight = 14.sp,
-                            fontFamily = FontFamily.Monospace
-                        )
-                    }
-                }
+                // VPN notice — API key requires external VPN in restricted regions
+                  Box(
+                      modifier = Modifier
+                          .fillMaxWidth()
+                          .padding(vertical = 8.dp)
+                          .border(1.dp, Color(0xFFFFAA00).copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                          .background(Color(0xFFFFAA00).copy(alpha = 0.06f), RoundedCornerShape(8.dp))
+                          .padding(12.dp)
+                  ) {
+                      Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                          Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFFFAA00), modifier = Modifier.size(16.dp))
+                          Text(
+                              text = if (isAr)
+                                  "⚠️ لاستخدام مفتاح API في المناطق المحجوبة، يجب تفعيل تطبيق VPN خارجي قبل تشغيل هذا التطبيق. مفتاح API لا يعمل بدون VPN في بعض الدول."
+                              else
+                                  "⚠️ To use the API key in restricted regions, activate an external VPN app before launching this app. The API key will not function without a VPN in blocked countries.",
+                              color = Color(0xFFFFAA00).copy(alpha = 0.9f),
+                              fontSize = 10.sp,
+                              lineHeight = 14.sp,
+                              fontFamily = FontFamily.Monospace
+                          )
+                      }
+                  }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                  Spacer(modifier = Modifier.height(24.dp))
                 
                 // Section: Operator Manual
                 SettingsSectionHeader(if (isAr) "دليل التشغيل" else "SYSTEM DOCUMENTATION")
