@@ -788,6 +788,8 @@ fun NeuralModuleTestView(
     }
 
     val isAcademyGenerating by viewModel.isAcademyGenerating.collectAsState()
+      val academyPoints by viewModel.academyPoints.collectAsState()
+      val academyStreak by viewModel.academyStreak.collectAsState()
 
     if (isAcademyGenerating) {
         Column(
@@ -854,7 +856,43 @@ fun NeuralModuleTestView(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        if (isGeneratingScenarios) {
+          // Stats bar — XP + Streak
+          androidx.compose.foundation.layout.Row(
+              modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(bottom = 12.dp)
+                  .border(1.dp, CyberCyan.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
+                  .background(CyberCyan.copy(alpha = 0.04f), RoundedCornerShape(10.dp))
+                  .padding(horizontal = 16.dp, vertical = 10.dp),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically
+          ) {
+              Text(
+                  text = "⚡ $academyPoints XP",
+                  color = CyberCyan,
+                  fontSize = 13.sp,
+                  fontWeight = FontWeight.Bold,
+                  fontFamily = FontFamily.Monospace
+              )
+              if (academyStreak > 0) {
+                  Text(
+                      text = if (isAr) "🔥 $academyStreak يوم" else "🔥 $academyStreak day streak",
+                      color = Color(0xFFFFAA00),
+                      fontSize = 13.sp,
+                      fontWeight = FontWeight.Bold,
+                      fontFamily = FontFamily.Monospace
+                  )
+              } else {
+                  Text(
+                      text = if (isAr) "ابدأ سلسلتك اليوم!" else "Start your streak!",
+                      color = Color.White.copy(alpha = 0.3f),
+                      fontSize = 11.sp,
+                      fontFamily = FontFamily.Monospace
+                  )
+              }
+          }
+
+          if (isGeneratingScenarios) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1002,9 +1040,10 @@ fun NeuralModuleTestView(
                         hasAnsweredCurrent = true
                         
                         // Score Addition
-                        if (finalChoice == currentScenario.correctIndex) {
-                            viewModel.addCyberScore(10)
-                        }
+                          if (finalChoice == currentScenario.correctIndex) {
+                              viewModel.addCyberScore(10)
+                              viewModel.recordCorrectAnswer()
+                          }
 
                         // Generate Adaptive Feedback via Gemini
                         isGeneratingDebrief = true
