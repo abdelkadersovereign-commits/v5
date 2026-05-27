@@ -80,7 +80,7 @@ class MainActivity : FragmentActivity() {
     enableEdgeToEdge()
 
     val workRequest = PeriodicWorkRequestBuilder<NotificationWorker>(15, TimeUnit.MINUTES).build()
-    WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork("sovereign_pulse", ExistingPeriodicWorkPolicy.KEEP, workRequest)
+    WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork("sovereign_pulse", ExistingPeriodicWorkPolicy.UPDATE, workRequest)
 
     setContent {
       MyApplicationTheme(darkTheme = true, dynamicColor = false) {
