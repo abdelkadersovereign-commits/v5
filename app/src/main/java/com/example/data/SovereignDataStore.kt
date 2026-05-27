@@ -28,7 +28,13 @@ class SovereignDataStore(private val context: Context) {
         val USER_INTERESTS = stringSetPreferencesKey("user_interests")
         val CALIBRATION_COMPLETED = booleanPreferencesKey("calibration_completed")
         val USER_GOAL = stringPreferencesKey("user_goal")
-    }
+
+          // Onboarding + Academy Progress
+          val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+          val ACADEMY_POINTS = intPreferencesKey("academy_points")
+          val ACADEMY_STREAK = intPreferencesKey("academy_streak")
+          val LAST_QUIZ_DATE = stringPreferencesKey("last_quiz_date")
+      }
 
     val operatorName: Flow<String> = context.dataStore.data.map { it[OPERATOR_NAME] ?: "Sovereign_Operator" }
     val neuralRole: Flow<String> = context.dataStore.data.map { it[NEURAL_ROLE] ?: "Sovereign Node v4" }
@@ -46,6 +52,12 @@ class SovereignDataStore(private val context: Context) {
     val userInterests: Flow<Set<String>> = context.dataStore.data.map { it[USER_INTERESTS] ?: emptySet() }
     val calibrationCompleted: Flow<Boolean> = context.dataStore.data.map { it[CALIBRATION_COMPLETED] ?: false }
     val userGoal: Flow<String> = context.dataStore.data.map { it[USER_GOAL] ?: "" }
+
+      // Onboarding + Academy Progress Flows
+      val onboardingCompleted: Flow<Boolean> = context.dataStore.data.map { it[ONBOARDING_COMPLETED] ?: false }
+      val academyPoints: Flow<Int> = context.dataStore.data.map { it[ACADEMY_POINTS] ?: 0 }
+      val academyStreak: Flow<Int> = context.dataStore.data.map { it[ACADEMY_STREAK] ?: 0 }
+      val lastQuizDate: Flow<String> = context.dataStore.data.map { it[LAST_QUIZ_DATE] ?: "" }
 
 
     suspend fun saveOperatorName(name: String) {
@@ -102,6 +114,32 @@ class SovereignDataStore(private val context: Context) {
     }
 
     suspend fun saveUserGoal(goal: String) {
-        context.dataStore.edit { it[USER_GOAL] = goal }
-    }
-}
+          context.dataStore.edit { it[USER_GOAL] = goal }
+      }
+
+      suspend fun setOnboardingCompleted() {
+          context.dataStore.edit { it[ONBOARDING_COMPLETED] = true }
+      }
+
+      suspend fun addAcademyPoints(pts: Int) {
+          context.dataStore.edit { prefs ->
+              prefs[ACADEMY_POINTS] = (prefs[ACADEMY_POINTS] ?: 0) + pts
+          }
+      }
+
+      suspend fun updateAcademyStreak() {
+          val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+          val today = sdf.format(java.util.Date())
+          val yesterday = sdf.format(java.util.Date(System.currentTimeMillis() - 86_400_000L))
+          context.dataStore.edit { prefs ->
+              val lastDate = prefs[LAST_QUIZ_DATE] ?: ""
+              val current = prefs[ACADEMY_STREAK] ?: 0
+              prefs[LAST_QUIZ_DATE] = today
+              prefs[ACADEMY_STREAK] = when {
+                  lastDate == today -> current
+                  lastDate == yesterday -> current + 1
+                  else -> 1
+              }
+          }
+      }
+  }
