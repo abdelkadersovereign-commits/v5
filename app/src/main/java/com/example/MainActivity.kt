@@ -173,6 +173,12 @@ class MainActivity : FragmentActivity() {
               LaunchedEffect(isAcademyOpen) { if (isAcademyOpen) { activeTab = "academy"; vm.setAcademyOpen(false) } }
               LaunchedEffect(isResourcesOpen) { if (isResourcesOpen) { activeTab = "resources"; vm.setResourcesOpen(false) } }
               LaunchedEffect(Unit) { if (vm.customApiKey.value.isBlank()) { activeTab = "settings"; vm.setSettingsOpen(true) } }
+              // Mid-session: navigate to calibration when API key is saved for the first time
+              LaunchedEffect(customApiKey, calibrationCompleted) {
+                  if (customApiKey.isNotBlank() && !calibrationCompleted) {
+                      navController.navigate("calibration") { popUpTo("dashboard") { inclusive = false } }
+                  }
+              }
 
               CompositionLocalProvider(LocalLayoutDirection provides if (isAr) LayoutDirection.Rtl else LayoutDirection.Ltr) {
                 Scaffold(
