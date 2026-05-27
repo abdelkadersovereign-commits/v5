@@ -296,8 +296,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         val body = json.toString().toRequestBody("application/json".toMediaType())
         val proxyEnabled = _isNeuralProxy.value
         val endpointUrls = listOf(
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent",
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent"
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent",
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent"
         )
         val activeClient = if (proxyEnabled) {
             OkHttpClient.Builder().connectTimeout(45, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS).retryOnConnectionFailure(true).build()
