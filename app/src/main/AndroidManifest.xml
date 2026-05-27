@@ -32,6 +32,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-    </application>
+        <receiver
+              android:name="com.example.receiver.BootReceiver"
+              android:enabled="true"
+              android:exported="true">
+              <intent-filter>
+                  <action android:name="android.intent.action.BOOT_COMPLETED" />
+                  <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                  <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+              </intent-filter>
+          </receiver>
+      </application>
 
 </manifest>
