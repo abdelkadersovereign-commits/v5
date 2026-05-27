@@ -420,6 +420,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     init {
         application.registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        monitorConnectivity()
         viewModelScope.launch { dataStore.isArabic.collect { _isArabic.value = it } }
         viewModelScope.launch { dataStore.stealthMode.collect { _isStealthMode.value = it } }
         viewModelScope.launch { dataStore.cyberScore.collect { _cyberScore.value = it } }
@@ -510,6 +511,26 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         return "N/A"
     }
 
+      private fun monitorConnectivity() {
+          val cm = getApplication<Application>().getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+          val callback = object : android.net.ConnectivityManager.NetworkCallback() {
+              override fun onCapabilitiesChanged(network: android.net.Network, caps: android.net.NetworkCapabilities) {
+                  _connectionType.value = when {
+                      caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) -> "Wi-Fi"
+                      caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) -> "Cellular"
+                      caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_ETHERNET) -> "Ethernet"
+                      else -> "Connected"
+                  }
+              }
+              override fun onLost(network: android.net.Network) { _connectionType.value = "DISCONNECTED" }
+              override fun onUnavailable() { _connectionType.value = "DISCONNECTED" }
+          }
+          try {
+              cm.registerDefaultNetworkCallback(callback)
+          } catch (_: Exception) { _connectionType.value = "Unknown" }
+      }
+
+  
     fun fetchStrategicIntelligence() {
         // This can now be personalized too in the future!
         val list = if (_isArabic.value) {
