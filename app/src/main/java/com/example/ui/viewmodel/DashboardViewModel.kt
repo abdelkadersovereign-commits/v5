@@ -196,6 +196,17 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch { dataStore.saveCyberScore(_cyberScore.value + points) }
     }
 
+      fun completeOnboarding() {
+          viewModelScope.launch { dataStore.setOnboardingCompleted() }
+      }
+
+      fun recordCorrectAnswer() {
+          viewModelScope.launch {
+              dataStore.addAcademyPoints(10)
+              dataStore.updateAcademyStreak()
+          }
+      }
+
     fun setAcademyOpen(open: Boolean) { _isAcademyOpen.value = open }
 
     private val _savedAcademyModuleId = MutableStateFlow("")
@@ -248,7 +259,16 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val userGoal: StateFlow<String> = _userGoal.asStateFlow()
 
     private val _calibrationCompleted = MutableStateFlow(false)
-    val calibrationCompleted: StateFlow<Boolean> = _calibrationCompleted.asStateFlow()
+      val calibrationCompleted: StateFlow<Boolean> = _calibrationCompleted.asStateFlow()
+
+      private val _onboardingCompleted = MutableStateFlow(false)
+      val onboardingCompleted: StateFlow<Boolean> = _onboardingCompleted.asStateFlow()
+
+      private val _academyPoints = MutableStateFlow(0)
+      val academyPoints: StateFlow<Int> = _academyPoints.asStateFlow()
+
+      private val _academyStreak = MutableStateFlow(0)
+      val academyStreak: StateFlow<Int> = _academyStreak.asStateFlow()
     // --- End User Cognitive Model State ---
 
     private val dohClient = OkHttpClient.Builder().connectTimeout(5, TimeUnit.SECONDS).readTimeout(5, TimeUnit.SECONDS).build()
@@ -439,6 +459,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch { dataStore.userInterests.collect { _userInterests.value = it } }
         viewModelScope.launch { dataStore.calibrationCompleted.collect { _calibrationCompleted.value = it } }
         viewModelScope.launch { dataStore.userGoal.collect { _userGoal.value = it } }
+          viewModelScope.launch { dataStore.onboardingCompleted.collect { _onboardingCompleted.value = it } }
+          viewModelScope.launch { dataStore.academyPoints.collect { _academyPoints.value = it } }
+          viewModelScope.launch { dataStore.academyStreak.collect { _academyStreak.value = it } }
 
         viewModelScope.launch(Dispatchers.IO) {
             try { _ipAddress.value = fetchPublicIp() } catch (_: Exception) { _ipAddress.value = extractLocalIp() }
