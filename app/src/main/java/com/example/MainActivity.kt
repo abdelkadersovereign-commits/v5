@@ -90,6 +90,7 @@ class MainActivity : FragmentActivity() {
           val prayerVm: com.example.ui.viewmodel.PrayerViewModel = viewModel()
           val isAr by vm.isArabic.collectAsState()
           val calibrationCompleted by vm.calibrationCompleted.collectAsState()
+            val onboardingCompleted by vm.onboardingCompleted.collectAsState()
           val customApiKey by vm.customApiKey.collectAsState()
 
           fun triggerBiometricAuth(title: String, subtitle: String, onSuccess: () -> Unit, closeOnCancel: Boolean = false) {
@@ -140,6 +141,7 @@ class MainActivity : FragmentActivity() {
           }
 
           val startDestination = when {
+              !onboardingCompleted -> "onboarding"
               customApiKey.isBlank() -> "dashboard"
               !calibrationCompleted -> "calibration"
               else -> "dashboard"
@@ -158,7 +160,15 @@ class MainActivity : FragmentActivity() {
                     }
                 })
             }
-            composable("calibration") {
+            composable("onboarding") {
+                  OnboardingScreen {
+                      vm.completeOnboarding()
+                      navController.navigate("splash") {
+                          popUpTo("onboarding") { inclusive = true }
+                      }
+                  }
+              }
+              composable("calibration") {
                 CalibrationScreen(viewModel = vm, onCalibrationComplete = {
                     navController.navigate("dashboard") { popUpTo("calibration") { inclusive = true } }
                 })
