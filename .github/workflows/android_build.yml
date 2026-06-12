@@ -18,7 +18,7 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Clean Gradle Cache (prevents stale cache issues)
+    - name: Clean Gradle Cache
       run: |
         rm -rf ~/.gradle/caches
         rm -rf ~/.gradle/wrapper/dists
@@ -38,14 +38,22 @@ jobs:
         fi
         chmod +x gradlew
 
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug --no-configuration-cache --stacktrace --refresh-dependencies
+    - name: Decode Keystore
+      run: |
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > my-upload-key.jks
+        echo "✅ Keystore decoded."
+
+    - name: Build Release APK
+      run: ./gradlew assembleRelease --no-configuration-cache --stacktrace --refresh-dependencies
       env:
         GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx4g"
+        STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        KEYSTORE_PATH: ${{ github.workspace }}/my-upload-key.jks
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: A_SYRIA_V4_FINAL
-        path: app/build/outputs/apk/debug/app-debug.apk
+        name: A_SYRIA_V5_RELEASE
+        path: app/build/outputs/apk/release/app-release.apk
         retention-days: 30
