@@ -85,15 +85,16 @@ class MainActivity : FragmentActivity() {
     WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork("sovereign_pulse", ExistingPeriodicWorkPolicy.UPDATE, workRequest)
 
     setContent {
-      MyApplicationTheme(darkTheme = true, dynamicColor = false) {
+      val vm: DashboardViewModel = viewModel()
+      val prayerVm: com.example.ui.viewmodel.PrayerViewModel = viewModel()
+      val uiConfig by vm.uiConfig.collectAsState()
+
+      MyApplicationTheme(darkTheme = true, dynamicColor = false, uiConfig = uiConfig) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
           val navController = rememberNavController()
-          val vm: DashboardViewModel = viewModel()
-          val prayerVm: com.example.ui.viewmodel.PrayerViewModel = viewModel()
           val isAr by vm.isArabic.collectAsState()
           val calibrationCompleted by vm.calibrationCompleted.collectAsState()
             val onboardingCompleted by vm.onboardingCompleted.collectAsState()
-            val uiConfig by vm.uiConfig.collectAsState()
           val customApiKey by vm.customApiKey.collectAsState()
 
           fun triggerBiometricAuth(title: String, subtitle: String, onSuccess: () -> Unit, closeOnCancel: Boolean = false) {
