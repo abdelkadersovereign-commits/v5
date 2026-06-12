@@ -73,7 +73,7 @@ package com.example.adaptive
 
               // ── Gate 3: Sanitize input (anti-prompt-injection) ───────────────
               val sanitized = feedbackText
-                  .replace(Regex("[{}\[\]<>]"), "")   // remove JSON/HTML chars
+                  .replace(Regex("[{}\\[\\]<>]"), "")   // remove JSON/HTML chars
                   .replace(Regex("(?i)(system|ignore|execute|eval|admin|inject|override|jailbreak)", RegexOption.IGNORE_CASE), "***")
                   .take(300)                              // hard cap
                   .trim()
@@ -173,8 +173,8 @@ package com.example.adaptive
       private fun parseAndValidateChanges(geminiText: String): List<UIChange> {
           // Strip any accidental markdown code fences
           val cleaned = geminiText
-              .replace(Regex("^\x60{3}[a-z]*\n?", RegexOption.MULTILINE), "")
-              .replace("\x60\x60\x60", "")
+              .replace(Regex("^```[a-z]*\n?", RegexOption.MULTILINE), "")
+              .replace("```", "")
               .trim()
 
           return try {
