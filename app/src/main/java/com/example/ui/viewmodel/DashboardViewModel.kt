@@ -294,31 +294,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
       val academyStreak: StateFlow<Int> = _academyStreak.asStateFlow()
     // --- End User Cognitive Model State ---
 
-    private val dohClient = OkHttpClient.Builder().connectTimeout(5, TimeUnit.SECONDS).readTimeout(5, TimeUnit.SECONDS).build()
-
-    private val bypassDns = object : okhttp3.Dns {
-        override fun lookup(hostname: String): List<java.net.InetAddress> {
-            try { okhttp3.Dns.SYSTEM.lookup(hostname).takeIf { it.isNotEmpty() }?.let { return it } } catch (_: Exception) {}
-            listOf("https://1.1.1.1/dns-query?name=$hostname&type=A", "https://8.8.8.8/resolve?name=$hostname&type=A").forEach { dohUrl ->
-                try {
-                    val req = Request.Builder().url(dohUrl).header("Accept", "application/dns-json").build()
-                    val resp = dohClient.newCall(req).execute()
-                    val json = org.json.JSONObject(resp.body?.string() ?: "")
-                    val answers = json.optJSONArray("Answer") ?: return@forEach
-                    val addrs = (0 until answers.length())
-                        .mapNotNull { answers.getJSONObject(it) }
-                        .filter { it.optInt("type") == 1 }
-                        .mapNotNull { try { java.net.InetAddress.getByName(it.getString("data")) } catch (_: Exception) { null } }
-                    if (addrs.isNotEmpty()) return addrs
-                } catch (_: Exception) {}
-            }
-            throw java.net.UnknownHostException("Could not resolve $hostname")
-        }
-    }
-
     private val okHttpClient = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS).readTimeout(45, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS).retryOnConnectionFailure(true).dns(bypassDns).build()
+        .writeTimeout(30, TimeUnit.SECONDS).retryOnConnectionFailure(true).build()
 
     private suspend fun generateContentSafely(prompt: String): String {
         return withContext(Dispatchers.IO) {

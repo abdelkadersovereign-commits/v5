@@ -27,11 +27,10 @@ jobs:
         key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
         restore-keys: gradle-
 
-    - name: Cache debug keystore
-      uses: actions/cache@v4
-      with:
-        path: ~/.android/debug.keystore
-        key: debug-keystore-v1
+    - name: Decode debug keystore
+      run: |
+        base64 -d debug.keystore.base64 > debug.keystore
+        echo "✅ debug.keystore decoded from repo — consistent signing guaranteed."
 
     - name: Generate Gradle Wrapper if Missing
       run: |
