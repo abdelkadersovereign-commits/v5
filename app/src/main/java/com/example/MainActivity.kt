@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.*
+  import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,7 +34,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.work.*
 import com.example.worker.NotificationWorker
 import java.util.concurrent.TimeUnit
-import com.example.ui.screens.* 
+import com.example.adaptive.LocalAdaptiveConfig
+  import com.example.ui.screens.* 
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
@@ -91,6 +93,7 @@ class MainActivity : FragmentActivity() {
           val isAr by vm.isArabic.collectAsState()
           val calibrationCompleted by vm.calibrationCompleted.collectAsState()
             val onboardingCompleted by vm.onboardingCompleted.collectAsState()
+            val uiConfig by vm.uiConfig.collectAsState()
           val customApiKey by vm.customApiKey.collectAsState()
 
           fun triggerBiometricAuth(title: String, subtitle: String, onSuccess: () -> Unit, closeOnCancel: Boolean = false) {
@@ -147,6 +150,7 @@ class MainActivity : FragmentActivity() {
               else -> "dashboard"
           }
 
+          CompositionLocalProvider(LocalAdaptiveConfig provides uiConfig) {
           NavHost(
             navController = navController, 
             startDestination = "splash",
@@ -209,7 +213,7 @@ class MainActivity : FragmentActivity() {
                       )
                       "academy" -> AcademyScreen(vm, onNavigateToGlossary = { navController.navigate("glossary") }, onNavigateToChecklist = { navController.navigate("checklist") })
                       "resources" -> ResourcesScreen(vm) { activeTab = "home" }
-                      "settings" -> SettingsScreen(vm, { activeTab = "home" }, { navController.navigate("about") }) { title, sub, onOk -> triggerBiometricAuth(title, sub, onOk) }
+                      "settings" -> SettingsScreen(vm, { activeTab = "home" }, { navController.navigate("about") }, { navController.navigate("adaptive_feedback") }) { title, sub, onOk -> triggerBiometricAuth(title, sub, onOk) }
                     }
                   }
                 }
@@ -219,7 +223,12 @@ class MainActivity : FragmentActivity() {
             composable("about") { AboutScreen { navController.popBackStack() } }
             composable("glossary") { CyberGlossaryScreen(vm) { navController.popBackStack() } }
             composable("checklist") { SecurityChecklistScreen(vm) { navController.popBackStack() } }
-          }
+              composable("adaptive_feedback") {
+                  val isAr by vm.isArabic.collectAsState()
+                  FeedbackScreen(vm, isAr) { navController.popBackStack() }
+              }
+            } // end NavHost
+            } // end CompositionLocalProvider
         }
       }
     }
