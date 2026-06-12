@@ -2,11 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Network (required for AI features and link scanner) -->
+    <!-- Network: Used for AI features (Gemini) and real-time security scanning -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Location (optional — used for prayer times only) -->
+    <!-- Location: Strictly used for accurate prayer time calculations based on user city -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 

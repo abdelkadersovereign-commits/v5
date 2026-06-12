@@ -32,7 +32,7 @@ package com.example.worker
           private const val KEY_LAST_SECURITY = "last_security_ms"
           private const val KEY_LAST_GEMINI = "last_gemini_ms"
           private const val KEY_LAST_WISDOM = "last_wisdom_ms"
-          private const val TWELVE_HOURS_MS = 12L * 60 * 60 * 1000
+          private const val TWELVE_HOURS_MS = 24L * 60 * 60 * 1000 // Reduced frequency to avoid Play Protect flags
           private const val TWENTY_FOUR_HOURS_MS = 24L * 60 * 60 * 1000
 
           private val SHORT_DUAS = mapOf(
