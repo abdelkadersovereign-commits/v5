@@ -101,6 +101,8 @@ import com.example.ui.theme.CyberCyan
 import com.example.ui.theme.GlassWhite
 import com.example.ui.theme.VoidBlack
 import com.example.ui.viewmodel.DashboardViewModel
+import com.example.adaptive.LocalAdaptiveConfig
+import com.example.adaptive.UIConfig
 import kotlin.random.Random
 import java.util.Calendar
 import kotlin.math.cos
@@ -131,6 +133,33 @@ data class SpaceParticle(
     val size: Float,
     val opacity: Float
 )
+
+/**
+ * Resolves the AI-configured accent color from UIConfig.
+ * Priority: primaryHex > accentColor named token > CyberCyan fallback.
+ * Pure function — safe to call directly inside @Composable (triggers recompose via LocalAdaptiveConfig).
+ */
+private fun resolveAccentFromConfig(config: UIConfig): Color {
+    if (config.primaryHex.isNotEmpty()) {
+        return try {
+            val cleaned = config.primaryHex.trimStart('#')
+            val value: Long = when (cleaned.length) {
+                6 -> 0xFF000000L or cleaned.toLong(16)
+                8 -> cleaned.toLong(16)
+                else -> return CyberCyan
+            }
+            Color(value.toInt())
+        } catch (_: Exception) { CyberCyan }
+    }
+    return when (config.accentColor) {
+        "amber"  -> AmberZen
+        "green"  -> Color(0xFF00FF88)
+        "white"  -> Color(0xFFE0E0E0)
+        "red"    -> Color(0xFFFF3D5A)
+        "purple" -> Color(0xFFBB86FC)
+        else     -> CyberCyan
+    }
+}
 
 @Composable
 fun DashboardScreen(
@@ -296,9 +325,15 @@ fun DashboardScreen(
         else -> listOf(Color(0xFF001520), VoidBlack) // Cyber Blue background when online
     }
 
-    // Connection-aware dynamic accent: Blue when ONLINE, Orange when OFFLINE
+    // ── AI-driven theme accent — reads live from LocalAdaptiveConfig so every color
+    //    change issued by the AI Brain instantly re-triggers Compose recomposition
+    //    across the entire DashboardScreen without any app restart.
+    val adaptiveConfig = LocalAdaptiveConfig.current
+    val themeAccent = resolveAccentFromConfig(adaptiveConfig)
+
+    // Connection-aware dynamic accent: AI-theme when ONLINE, Orange when OFFLINE
     val dynamicAccent by animateColorAsState(
-        targetValue = if (isNeuralLinkOffline) AmberZen else CyberCyan,
+        targetValue = if (isNeuralLinkOffline) AmberZen else themeAccent,
         animationSpec = tween(800),
         label = "dynamicAccent"
     )
@@ -2969,15 +3004,22 @@ fun DesktopModeScreen(
 
     val arabicPrayerName = prayerNameToArabic(prayerName)
 
-    // Connection-aware accent color
-    val accentColor = if (isOnline) CyberCyan else AmberZen
+    // ── AI-driven accent for Desk Mode — reads LocalAdaptiveConfig directly
+    //    so color changes from AI Brain apply here too without restarting Desk Mode
+    val deskAdaptiveConfig = LocalAdaptiveConfig.current
+    val deskThemeAccent = resolveAccentFromConfig(deskAdaptiveConfig)
+    val accentColor = if (isOnline) deskThemeAccent else AmberZen
 
-    // Live digital time
-    var currentTime by remember { mutableStateOf(getCurrentTimeFormatted()) }
+    // 12/24 hour format — toggled by AI Brain via is12HourFormat key
+    val use12Hour = deskAdaptiveConfig.is12HourFormat
+
+    // Live digital time — LaunchedEffect key includes use12Hour so format
+    // switches immediately the moment the AI Brain flips the flag
+    var currentTime by remember { mutableStateOf(getCurrentTimeFormatted(use12Hour)) }
     var currentSeconds by remember { mutableStateOf(getCurrentSecondsFormatted()) }
-    LaunchedEffect(Unit) {
+    LaunchedEffect(use12Hour) {
         while (true) {
-            currentTime = getCurrentTimeFormatted()
+            currentTime = getCurrentTimeFormatted(use12Hour)
             currentSeconds = getCurrentSecondsFormatted()
             kotlinx.coroutines.delay(1000)
         }
@@ -3416,17 +3458,31 @@ fun DesktopModeScreen(
     }
 }
 
-private fun getCurrentTimeFormatted(): String {
+/**
+ * Returns formatted time for Desk Mode.
+ * [use12Hour] = false → "HH:MM" (24-hour, default)
+ * [use12Hour] = true  → "hh:MM AM/PM" (12-hour with meridiem)
+ * Controlled by AI Brain via UIConfig.is12HourFormat.
+ */
+private fun getCurrentTimeFormatted(use12Hour: Boolean = false): String {
     val cal = Calendar.getInstance()
-    val hour = cal.get(Calendar.HOUR_OF_DAY)
-    val minute = cal.get(Calendar.MINUTE)
-    return String.format("%02d:%02d", hour, minute)
+    return if (use12Hour) {
+        val rawHour = cal.get(Calendar.HOUR_OF_DAY)
+        val hour12  = cal.get(Calendar.HOUR).let { if (it == 0) 12 else it }
+        val minute  = cal.get(Calendar.MINUTE)
+        val meridiem = if (rawHour >= 12) "PM" else "AM"
+        String.format("%02d:%02d %s", hour12, minute, meridiem)
+    } else {
+        val hour   = cal.get(Calendar.HOUR_OF_DAY)
+        val minute = cal.get(Calendar.MINUTE)
+        String.format("%02d:%02d", hour, minute)
+    }
 }
 
 private fun getCurrentSecondsFormatted(): String {
-    val cal = Calendar.getInstance()
+    val cal    = Calendar.getInstance()
     val second = cal.get(Calendar.SECOND)
-    val ampm = if (cal.get(Calendar.HOUR_OF_DAY) >= 12) "PM" else "AM"
+    val ampm   = if (cal.get(Calendar.HOUR_OF_DAY) >= 12) "PM" else "AM"
     return String.format("%02d  •  %s", second, ampm)
 }
 
