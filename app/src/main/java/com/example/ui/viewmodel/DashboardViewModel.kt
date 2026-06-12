@@ -25,7 +25,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import com.example.data.SovereignDataStore
+import com.example.adaptive.AdaptiveEngine
+  import com.example.adaptive.FeedbackResult
+  import com.example.adaptive.FeedbackService
+  import com.example.adaptive.UIChange
+  import com.example.data.SovereignDataStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -145,6 +149,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     fun setSettingsAuthenticated(auth: Boolean) { _isSettingsAuthenticated.value = auth }
 
     private val dataStore = SovereignDataStore(application)
+      val adaptiveEngine   = AdaptiveEngine(application)
+      val uiConfig         = adaptiveEngine.uiConfig
+      private val feedbackService = FeedbackService(application)
 
     private val _isArabic = MutableStateFlow(true)
     val isArabic: StateFlow<Boolean> = _isArabic.asStateFlow()
@@ -205,6 +212,22 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
               dataStore.addAcademyPoints(10)
               dataStore.updateAcademyStreak()
           }
+      }
+
+      /** Submit feedback through FeedbackService. Reads the active API key without touching key storage. */
+      suspend fun submitFeedback(text: String): FeedbackResult {
+          val apiKey = _customApiKey.value.ifBlank { com.asyria.v4.BuildConfig.GEMINI_API_KEY }
+          return feedbackService.submitFeedback(text, apiKey)
+      }
+
+      /** Apply a confirmed list of UIChange items via AdaptiveEngine. */
+      fun applyUIChanges(changes: List<UIChange>) {
+          adaptiveEngine.applyChanges(changes)
+      }
+
+      /** Reset all adaptive UI settings to factory defaults. */
+      fun resetUIToDefaults() {
+          adaptiveEngine.resetToDefaults()
       }
 
     fun setAcademyOpen(open: Boolean) { _isAcademyOpen.value = open }
