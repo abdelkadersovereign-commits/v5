@@ -103,8 +103,8 @@ class FeedbackService(private val context: Context) {
                 if (changes.isEmpty()) {
                     FeedbackResult.Empty(
                         if (context.resources.configuration.locales[0].language == "ar")
-                            "لم يتم التعرف على تغييرات قابلة للتطبيق. حاول وصف طلبك بشكل أوضح مثل: 'لون أخضر'، 'خط أكبر'، 'وضع مضغوط'."
-                        else "No applicable changes detected. Try: 'green color', 'bigger text', 'compact mode', 'disable animations'."
+                            "لم يتم التعرف على تغييرات قابلة للتطبيق. حاول وصف طلبك بشكل أوضح مثل: 'لون أخضر'، 'خط أكبر'، 'وضع مضغوط'، 'وقت 12 ساعة'."
+                        else "No applicable changes detected. Try: 'green color', 'bigger text', 'compact mode', '12 hour clock'."
                     )
                 } else {
                     FeedbackResult.Success(changes)
@@ -155,9 +155,12 @@ ANIMATION:
 NOTIFICATIONS:
 - "notificationLevel" → "silent" | "normal" | "active"
 
+CLOCK FORMAT (Desk Mode):
+- "is12HourFormat"   → "true" (12-hour AM/PM) | "false" (24-hour, default)
+
 ═══ SMART MAPPING EXAMPLES ═══
 "make it green" → [{"key":"accentColor","value":"green","label":"لون أخضر — Green accent","preview":"يغير اللون الرئيسي إلى الأخضر — Changes accent to green"}]
-"use color #FF5500" → [{"key":"primaryHex","value":"#FF5500","preview":"..."}]
+"use color #FF5500" → [{"key":"primaryHex","value":"#FF5500","label":"لون مخصص — Custom color","preview":"يطبق اللون #FF5500 — Applies hex color #FF5500"}]
 "bigger text" → [{"key":"fontSize","value":"18","label":"خط أكبر — Larger text","preview":"يكبر حجم النص من 14 إلى 18 — Increases font size"}]
 "professional look" → cornerRadius:8, cardStyle:solid, tabStyle:compact, fontWeight:normal
 "more modern" → cornerRadius:20, cardStyle:glass, animationsEnabled:true
@@ -171,6 +174,12 @@ NOTIFICATIONS:
 "flat design" → cardStyle:flat, cornerRadius:4
 "round corners" → cornerRadius:24
 "minimal" → cardStyle:flat, cornerRadius:4, compactMode:true, animationsEnabled:false
+"12 hour clock" or "AM PM" or "توقيت 12 ساعة" → is12HourFormat:true
+"24 hour clock" or "military time" or "توقيت 24 ساعة" → is12HourFormat:false
+"switch clock format" → is12HourFormat:true (if currently false; always default to true when ambiguous)
+"red theme" → [{"key":"accentColor","value":"red",...},{"key":"backgroundHex","value":"#1A0000",...}]
+"purple futuristic" → accentColor:purple, cornerRadius:20, cardStyle:glass
+"classic look" → cornerRadius:4, cardStyle:solid, animationsEnabled:false, fontWeight:bold
 
 USER REQUEST: "${sanitizedInput}"
 
