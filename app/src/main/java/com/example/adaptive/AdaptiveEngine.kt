@@ -36,7 +36,10 @@ data class UIConfig(
     val animationsEnabled: Boolean = true,
 
     // ── Notifications ────────────────────────────────────────────────────────
-    val notificationLevel: String = "normal"  // silent | normal | active
+    val notificationLevel: String = "normal", // silent | normal | active
+
+    // ── Clock Format ─────────────────────────────────────────────────────────
+    val is12HourFormat: Boolean = false       // false = 24h (default), true = 12h AM/PM
 )
 
 /** Proposed UI change returned by FeedbackService before the user confirms. */
@@ -61,7 +64,7 @@ class AdaptiveEngine(private val context: Context) {
 
     companion object {
         private const val PREFS_NAME = "sovereign_adaptive_ui"
-        private const val KEY_CONFIG  = "ui_config_json_v2"
+        private const val KEY_CONFIG  = "ui_config_json_v3"
 
         private val HEX_REGEX = Regex("^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$")
 
@@ -86,7 +89,9 @@ class AdaptiveEngine(private val context: Context) {
             // Animation
             "animationsEnabled" to { v -> v == "true" || v == "false" },
             // Notifications
-            "notificationLevel" to { v -> v in setOf("silent", "normal", "active") }
+            "notificationLevel" to { v -> v in setOf("silent", "normal", "active") },
+            // Clock Format
+            "is12HourFormat"    to { v -> v == "true" || v == "false" }
         )
     }
 
@@ -115,6 +120,7 @@ class AdaptiveEngine(private val context: Context) {
                 "showStatusBar"     -> updated.copy(showStatusBar = change.value == "true")
                 "animationsEnabled" -> updated.copy(animationsEnabled = change.value == "true")
                 "notificationLevel" -> updated.copy(notificationLevel = change.value)
+                "is12HourFormat"    -> updated.copy(is12HourFormat = change.value == "true")
                 else                -> updated
             }
         }
@@ -147,7 +153,8 @@ class AdaptiveEngine(private val context: Context) {
                 showAcademyTab    = o.optBoolean("showAcademyTab", true),
                 showStatusBar     = o.optBoolean("showStatusBar", true),
                 animationsEnabled = o.optBoolean("animationsEnabled", true),
-                notificationLevel = o.optString("notificationLevel", "normal")
+                notificationLevel = o.optString("notificationLevel", "normal"),
+                is12HourFormat    = o.optBoolean("is12HourFormat", false)
             )
         } catch (e: Exception) { UIConfig() }
     }
@@ -168,6 +175,7 @@ class AdaptiveEngine(private val context: Context) {
             put("showStatusBar",     config.showStatusBar)
             put("animationsEnabled", config.animationsEnabled)
             put("notificationLevel", config.notificationLevel)
+            put("is12HourFormat",    config.is12HourFormat)
         }.toString()
         prefs.edit().putString(KEY_CONFIG, json).apply()
     }
