@@ -41,7 +41,7 @@ jobs:
     - name: Decode Keystore
       run: |
         base64 -d release-keystore.base64 > my-upload-key.p12
-        echo "✅ Keystore decoded."
+        echo "Keystore decoded."
 
     - name: Build Release APK
       run: ./gradlew assembleRelease --no-configuration-cache --stacktrace --refresh-dependencies
