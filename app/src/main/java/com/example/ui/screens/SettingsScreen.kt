@@ -36,9 +36,10 @@ import androidx.compose.ui.text.style.TextAlign
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    viewModel: DashboardViewModel,
-    onClose: () -> Unit,
-    onOpenAbout: () -> Unit,
+      viewModel: DashboardViewModel,
+      onClose: () -> Unit,
+      onOpenAbout: () -> Unit,
+      onOpenCustomize: () -> Unit = {},
     onLockRequest: (String, String, () -> Unit) -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
@@ -283,7 +284,31 @@ fun SettingsScreen(
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Monospace
                     )
-                }
+                
+
+                  // ── AI UI Customizer ──────────────────────────────────────────────────────
+                  Button(
+                      onClick = {
+                          haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                          onOpenCustomize()
+                      },
+                      modifier = Modifier.fillMaxWidth(),
+                      colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFAA00).copy(alpha = 0.1f)),
+                      border = BorderStroke(1.dp, Color(0xFFFFAA00).copy(alpha = 0.5f)),
+                      shape = RoundedCornerShape(10.dp)
+                  ) {
+                      Row(
+                          horizontalArrangement = Arrangement.spacedBy(8.dp),
+                          verticalAlignment = Alignment.CenterVertically
+                      ) {
+                          Text(text = "⚙", color = Color(0xFFFFAA00), fontSize = 16.sp)
+                          Text(
+                              text = if (isAr) "تخصيص الواجهة بالذكاء الاصطناعي" else "AI UI CUSTOMIZER",
+                              color = Color(0xFFFFAA00), fontSize = 12.sp,
+                              fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold
+                          )
+                      }
+                  }}
 
                 Spacer(modifier = Modifier.height(24.dp))
 
