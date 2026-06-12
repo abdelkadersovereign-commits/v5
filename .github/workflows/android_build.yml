@@ -18,18 +18,20 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Clean Gradle Cache
-      run: |
-        rm -rf ~/.gradle/caches
-        rm -rf ~/.gradle/wrapper/dists
-        echo "Gradle cache cleared."
-
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
+    - name: Cache Gradle
+      uses: actions/cache@v4
       with:
-        gradle-version: 8.7
-        cache-disabled: false
-        cache-overwrite-existing: true
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: gradle-
+
+    - name: Cache debug keystore
+      uses: actions/cache@v4
+      with:
+        path: ~/.android/debug.keystore
+        key: debug-keystore-v1
 
     - name: Generate Gradle Wrapper if Missing
       run: |
@@ -38,22 +40,14 @@ jobs:
         fi
         chmod +x gradlew
 
-    - name: Decode Keystore
-      run: |
-        base64 -d release-keystore.base64 > my-upload-key.p12
-        echo "Keystore decoded."
-
-    - name: Build Release APK
-      run: ./gradlew assembleRelease --no-configuration-cache --stacktrace --refresh-dependencies
+    - name: Build Debug APK
+      run: ./gradlew assembleDebug --no-configuration-cache --stacktrace
       env:
         GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx4g"
-        STORE_PASSWORD: "AsyriaV5@2026"
-        KEY_PASSWORD: "AsyriaV5@2026"
-        KEYSTORE_PATH: "${{ github.workspace }}/my-upload-key.p12"
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: A_SYRIA_V5_RELEASE
-        path: app/build/outputs/apk/release/app-release.apk
+        name: A_SYRIA_V5_DEBUG
+        path: app/build/outputs/apk/debug/app-debug.apk
         retention-days: 30
