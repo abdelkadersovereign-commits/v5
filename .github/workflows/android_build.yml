@@ -40,16 +40,16 @@ jobs:
 
     - name: Decode Keystore
       run: |
-        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > my-upload-key.jks
+        base64 -d release-keystore.base64 > my-upload-key.p12
         echo "✅ Keystore decoded."
 
     - name: Build Release APK
       run: ./gradlew assembleRelease --no-configuration-cache --stacktrace --refresh-dependencies
       env:
         GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx4g"
-        STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        KEYSTORE_PATH: ${{ github.workspace }}/my-upload-key.jks
+        STORE_PASSWORD: "AsyriaV5@2026"
+        KEY_PASSWORD: "AsyriaV5@2026"
+        KEYSTORE_PATH: "${{ github.workspace }}/my-upload-key.p12"
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
