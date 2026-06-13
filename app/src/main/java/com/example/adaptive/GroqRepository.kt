@@ -10,15 +10,6 @@ package com.example.adaptive
   import org.json.JSONObject
   import java.util.concurrent.TimeUnit
 
-  /**
-   * GroqRepository — Sole entry-point for all Groq LLM API calls.
-   *
-   * Endpoint : POST https://api.groq.com/openai/v1/chat/completions
-   * Model    : llama-3.3-70b-versatile
-   *
-   * FeedbackService delegates network I/O here so the HTTP layer stays
-   * cleanly separated from business / parsing logic.
-   */
   class GroqRepository {
 
       private val client = OkHttpClient.Builder()
@@ -32,35 +23,48 @@ package com.example.adaptive
       }
 
       /**
-       * Send a chat-completion request to Groq and return the model reply.
-       *
-       * @param systemPrompt  System instruction enforcing structured JSON output.
-       * @param userContent   User feedback or customization request (already sanitised).
-       * @param groqApiKey    User-supplied Groq API key (stored in DataStore, never hardcoded).
-       * @return The raw reply string extracted from choices[0].message.content.
-       * @throws Exception on network failure or non-2xx HTTP status.
+       * Single-turn completion — used by FeedbackService for UI customisation.
        */
       suspend fun complete(
           systemPrompt: String,
           userContent: String,
           groqApiKey: String
       ): String = withContext(Dispatchers.IO) {
-
-          val requestBody = JSONObject().apply {
+          val body = JSONObject().apply {
               put("model", MODEL)
               put("temperature", 0.2)
               put("messages", JSONArray().apply {
-                  put(JSONObject().apply {
-                      put("role", "system")
-                      put("content", systemPrompt)
-                  })
-                  put(JSONObject().apply {
-                      put("role", "user")
-                      put("content", userContent)
-                  })
+                  put(JSONObject().apply { put("role", "system"); put("content", systemPrompt) })
+                  put(JSONObject().apply { put("role", "user");   put("content", userContent) })
               })
           }.toString()
+          execute(body, groqApiKey)
+      }
 
+      /**
+       * Multi-turn chat — used by GroqChatViewModel for conversational sessions.
+       * [history] is a list of (role, content) pairs in chronological order.
+       */
+      suspend fun chat(
+          systemPrompt: String,
+          history: List<Pair<String, String>>,
+          groqApiKey: String
+      ): String = withContext(Dispatchers.IO) {
+          val body = JSONObject().apply {
+              put("model", MODEL)
+              put("temperature", 0.7)
+              put("max_tokens", 600)
+              put("messages", JSONArray().apply {
+                  put(JSONObject().apply { put("role", "system"); put("content", systemPrompt) })
+                  history.forEach { (role, content) ->
+                      put(JSONObject().apply { put("role", role); put("content", content) })
+                  }
+              })
+          }.toString()
+          execute(body, groqApiKey)
+      }
+
+      private fun execute(requestBody: String, groqApiKey: String): String {
           val request = Request.Builder()
               .url(ENDPOINT)
               .post(requestBody.toRequestBody("application/json".toMediaType()))
@@ -69,21 +73,16 @@ package com.example.adaptive
               .build()
 
           val response = client.newCall(request).execute()
-          val rawBody  = response.body?.string()
-              ?: throw Exception("Empty response from Groq API.")
+          val rawBody  = response.body?.string() ?: throw Exception("Empty response from Groq.")
 
           if (!response.isSuccessful) {
-              val errorMsg = try {
-                  JSONObject(rawBody)
-                      .optJSONObject("error")
-                      ?.optString("message")
-                      ?: "Unknown Groq error"
+              val msg = try {
+                  JSONObject(rawBody).optJSONObject("error")?.optString("message") ?: "Groq error"
               } catch (_: Exception) { rawBody.take(200) }
-              throw Exception("Groq Error ${response.code}: $errorMsg")
+              throw Exception("Groq ${response.code}: $msg")
           }
 
-          // OpenAI-compatible response: choices[0].message.content
-          JSONObject(rawBody)
+          return JSONObject(rawBody)
               .getJSONArray("choices")
               .getJSONObject(0)
               .getJSONObject("message")
