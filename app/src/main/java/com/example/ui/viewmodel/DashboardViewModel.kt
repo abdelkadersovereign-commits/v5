@@ -214,10 +214,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
           }
       }
 
-      /** Submit feedback through FeedbackService. Reads the active API key without touching key storage. */
+      /** Submit UI-customization feedback via Groq (Master Brain). Gemini key is NOT used here. */
       suspend fun submitFeedback(text: String): FeedbackResult {
-          val apiKey = _customApiKey.value.ifBlank { com.asyria.v4.BuildConfig.GEMINI_API_KEY }
-          return feedbackService.submitFeedback(text, apiKey)
+          return feedbackService.submitFeedback(text, _groqApiKey.value)
       }
 
       /** Apply a confirmed list of UIChange items via AdaptiveEngine. */
@@ -259,6 +258,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val _customApiKey = MutableStateFlow("")
     val customApiKey: StateFlow<String> = _customApiKey.asStateFlow()
+
+    private val _groqApiKey = MutableStateFlow("")
+    val groqApiKey: StateFlow<String> = _groqApiKey.asStateFlow()
 
     private val _projectName = MutableStateFlow("")
     val projectName: StateFlow<String> = _projectName.asStateFlow()
@@ -364,6 +366,10 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch { dataStore.saveGeminiApiKey(key) }
     }
 
+    fun updateGroqApiKey(key: String) {
+        viewModelScope.launch { dataStore.saveGroqApiKey(key) }
+    }
+
     fun updateProjectName(name: String) {
         viewModelScope.launch { dataStore.saveProjectName(name) }
     }
@@ -449,6 +455,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch { dataStore.stealthMode.collect { _isStealthMode.value = it } }
         viewModelScope.launch { dataStore.cyberScore.collect { _cyberScore.value = it } }
         viewModelScope.launch { dataStore.geminiApiKey.collect { _customApiKey.value = it } }
+        viewModelScope.launch { dataStore.groqApiKey.collect { _groqApiKey.value = it } }
         viewModelScope.launch { dataStore.projectName.collect { _projectName.value = it } }
         viewModelScope.launch { dataStore.projectId.collect { _projectId.value = it } }
         viewModelScope.launch { dataStore.projectNumber.collect { _projectNumber.value = it } }

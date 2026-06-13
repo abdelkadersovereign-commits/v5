@@ -47,6 +47,7 @@ fun SettingsScreen(
     val isStealth by viewModel.isStealthMode.collectAsState()
     val isNeuralProxy by viewModel.isNeuralProxy.collectAsState()
     val apiKey by viewModel.customApiKey.collectAsState()
+    val groqApiKey by viewModel.groqApiKey.collectAsState()
     val projectName by viewModel.projectName.collectAsState()
     val projectId by viewModel.projectId.collectAsState()
     val projectNumber by viewModel.projectNumber.collectAsState()
@@ -66,6 +67,7 @@ fun SettingsScreen(
     var tempOperatorName by remember(operatorName) { mutableStateOf(operatorName) }
     var tempNeuralRole by remember(neuralRole) { mutableStateOf(neuralRole) }
     var tempApiKey by remember(apiKey) { mutableStateOf(apiKey) }
+    var tempGroqApiKey by remember(groqApiKey) { mutableStateOf(groqApiKey) }
     var tempProjectName by remember(projectName) { mutableStateOf(projectName) }
     var tempProjectId by remember(projectId) { mutableStateOf(projectId) }
     var tempProjectNumber by remember(projectNumber) { mutableStateOf(projectNumber) }
@@ -223,9 +225,69 @@ fun SettingsScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Section: System Preferences
+                  // ── Groq API Key (Master Brain — UI Customization) ──────────
+                  Box(
+                      modifier = Modifier
+                          .fillMaxWidth()
+                          .padding(vertical = 8.dp)
+                          .border(1.dp, CyberCyan.copy(alpha = 0.25f), RoundedCornerShape(12.dp))
+                          .background(CyberCyan.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
+                          .padding(16.dp)
+                  ) {
+                      Column {
+                          Row(verticalAlignment = Alignment.CenterVertically) {
+                              Icon(Icons.Default.Memory, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(16.dp))
+                              Spacer(modifier = Modifier.width(8.dp))
+                              Text(
+                                  text = if (isAr) "المخ الرئيسي — تخصيص الواجهة (Groq)" else "MASTER BRAIN — UI CUSTOMIZATION (Groq)",
+                                  color = CyberCyan,
+                                  fontSize = 12.sp,
+                                  fontWeight = FontWeight.Black,
+                                  fontFamily = FontFamily.Monospace
+                              )
+                          }
+                          Spacer(modifier = Modifier.height(8.dp))
+                          Text(
+                              text = if (isAr)
+                                  "يستخدم Groq مع LLaMA 3.3 70B لتخصيص الواجهة: الألوان، الخطوط، التخطيط. منفصل تماماً عن مفتاح Gemini."
+                              else
+                                  "Uses Groq + LLaMA 3.3 70B for UI customization: colors, fonts, layout. Completely separate from your Gemini key.",
+                              color = Color.White.copy(alpha = 0.7f),
+                              fontSize = 10.sp,
+                              lineHeight = 16.sp
+                          )
+                          Spacer(modifier = Modifier.height(12.dp))
+                          Button(
+                              onClick = { uriHandler.openUri("https://console.groq.com/keys") },
+                              colors = ButtonDefaults.buttonColors(containerColor = CyberCyan),
+                              shape = RoundedCornerShape(8.dp),
+                              modifier = Modifier.height(32.dp),
+                              contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                          ) {
+                              Text(
+                                  if (isAr) "احصل على مفتاح Groq 🔗" else "GET GROQ KEY 🔗",
+                                  fontSize = 10.sp, color = VoidBlack, fontWeight = FontWeight.Bold
+                              )
+                          }
+                      }
+                  }
+
+                  CyberTextField(
+                      label = if (isAr) "مفتاح Groq API (المخ الرئيسي)" else "GROQ API KEY (MASTER BRAIN)",
+                      value = tempGroqApiKey,
+                      onValueChange = {
+                          tempGroqApiKey = it
+                          viewModel.updateGroqApiKey(it)
+                      },
+                      isAr = isAr,
+                      isPassword = true
+                  )
+
+                  Spacer(modifier = Modifier.height(24.dp))
+
+                  // Section: System Preferences
                 SettingsSectionHeader(if (isAr) "تفضيلات النظام" else "SYSTEM PREFERENCES")
                 
                 SettingsToggle(

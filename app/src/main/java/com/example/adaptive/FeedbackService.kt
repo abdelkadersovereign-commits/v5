@@ -3,13 +3,7 @@ package com.example.adaptive
   import android.content.Context
   import kotlinx.coroutines.Dispatchers
   import kotlinx.coroutines.withContext
-  import okhttp3.MediaType.Companion.toMediaType
-  import okhttp3.OkHttpClient
-  import okhttp3.Request
-  import okhttp3.RequestBody.Companion.toRequestBody
   import org.json.JSONArray
-  import org.json.JSONObject
-  import java.util.concurrent.TimeUnit
 
   sealed class FeedbackResult {
       data class Success(val changes: List<UIChange>) : FeedbackResult()
@@ -18,37 +12,48 @@ package com.example.adaptive
       data class Error(val message: String) : FeedbackResult()
   }
 
+  /**
+   * FeedbackService — Orchestrates UI-customisation requests through the Groq layer.
+   *
+   * This service is intentionally decoupled from Gemini / Google AI.
+   * All LLM calls go through [GroqRepository] using the user's dedicated Groq API key.
+   * Gemini remains exclusively responsible for Quiz & Test generation (DashboardViewModel).
+   */
   class FeedbackService(private val context: Context) {
 
-      private val client = OkHttpClient.Builder()
-          .connectTimeout(20, TimeUnit.SECONDS)
-          .readTimeout(30, TimeUnit.SECONDS)
-          .build()
+      private val groqRepository = GroqRepository()
 
-      private val geminiEndpoint =
-          "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent"
-
-      suspend fun submitFeedback(feedbackText: String, apiKey: String): FeedbackResult =
+      /**
+       * Submit a UI-customisation request.
+       *
+       * @param feedbackText  Raw user input (e.g. "make it green", "bigger text").
+       * @param groqApiKey    The user's Groq API key loaded from DataStore.
+       * @return [FeedbackResult.Success], [RateLimited], [Empty], or [Error].
+       */
+      suspend fun submitFeedback(feedbackText: String, groqApiKey: String): FeedbackResult =
           withContext(Dispatchers.IO) {
 
+              // Rate-limit guard
               if (!RateLimiter.isAllowed(context)) {
                   return@withContext FeedbackResult.RateLimited(
                       resetSeconds = RateLimiter.getResetSeconds(context),
-                      remaining = 0
+                      remaining    = 0
                   )
               }
 
-              if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
+              // Groq key validation
+              if (groqApiKey.isBlank()) {
                   return@withContext FeedbackResult.Error(
                       if (context.resources.configuration.locales[0].language == "ar")
-                          "مفتاح API غير متوفر. أضف مفتاحك في الإعدادات أولاً."
-                      else "API key not configured. Add your key in Settings first."
+                          "مفتاح Groq API غير متوفر. أضفه في الإعدادات أولاً."
+                      else
+                          "Groq API key not configured. Add your key in Settings first."
                   )
               }
 
-              // Keep input clean: strip brackets, cap at 500 chars
+              // Sanitise: strip JSON-breaking chars, cap at 500 chars
               val sanitized = feedbackText
-                  .replace(Regex("[{}\\[\\]]"), "")
+                  .replace(Regex("[{}\[\]]"), "")
                   .take(500)
                   .trim()
 
@@ -57,31 +62,11 @@ package com.example.adaptive
               }
 
               try {
-                  val requestJson = buildAiPayload(sanitized)
-                  val body = requestJson.toRequestBody("application/json".toMediaType())
-                  val request = Request.Builder()
-                      .url(geminiEndpoint)
-                      .post(body)
-                      .header("x-goog-api-key", apiKey)
-                      .header("Content-Type", "application/json")
-                      .build()
-
-                  val response = client.newCall(request).execute()
-                  val rawText = response.body?.string()
-                      ?: return@withContext FeedbackResult.Error("Empty response from AI.")
-
-                  if (!response.isSuccessful) {
-                      return@withContext FeedbackResult.Error("AI Error ${response.code}: Check your API key or VPN.")
-                  }
-
-                  val aiText = JSONObject(rawText)
-                      .getJSONArray("candidates")
-                      .getJSONObject(0)
-                      .getJSONObject("content")
-                      .getJSONArray("parts")
-                      .getJSONObject(0)
-                      .getString("text")
-                      .trim()
+                  val aiText = groqRepository.complete(
+                      systemPrompt = buildSystemPrompt(),
+                      userContent  = sanitized,
+                      groqApiKey   = groqApiKey
+                  )
 
                   val changes = parseAndValidateChanges(aiText)
                   RateLimiter.recordRequest(context)
@@ -89,8 +74,9 @@ package com.example.adaptive
                   if (changes.isEmpty()) {
                       FeedbackResult.Empty(
                           if (context.resources.configuration.locales[0].language == "ar")
-                              "لم يتم التعرف على تغييرات. حاول: 'لون أخضر'، 'خط أكبر'، 'وضع مضغوط'، 'توقيت 12 ساعة'."
-                          else "No changes detected. Try: 'green color', 'bigger text', 'compact mode', '12 hour clock'."
+                              "لم يتم التعرف على تغييرات. حاول: 'لون أخضر'، 'خط أكبر'، 'وضع مضغوط'."
+                          else
+                              "No changes detected. Try: 'green color', 'bigger text', 'compact mode'."
                       )
                   } else {
                       FeedbackResult.Success(changes)
@@ -101,68 +87,43 @@ package com.example.adaptive
               }
           }
 
-      private fun buildAiPayload(userInput: String): String {
-          val configKeys = buildString {
-              appendLine("accentColor: cyan|amber|green|white|red|purple")
-              appendLine("primaryHex: hex color e.g. #FF5500")
-              appendLine("backgroundHex: hex background e.g. #0D1117")
-              appendLine("fontSize: 10 to 24")
-              appendLine("fontWeight: light|normal|bold")
-              appendLine("cornerRadius: 0 to 32")
-              appendLine("cardStyle: glass|solid|outline|flat")
-              appendLine("compactMode: true|false")
-              appendLine("tabStyle: compact|normal")
-              appendLine("showPrayerTab: true|false")
-              appendLine("showAcademyTab: true|false")
-              appendLine("showStatusBar: true|false")
-              appendLine("animationsEnabled: true|false")
-              appendLine("notificationLevel: silent|normal|active")
-              appendLine("is12HourFormat: true|false")
-          }
+      // ── Private helpers ──────────────────────────────────────────────────────
 
-          val examples = buildString {
-              appendLine("'green' -> accentColor:green")
-              appendLine("'bigger text' -> fontSize:18")
-              appendLine("'compact' -> compactMode:true, tabStyle:compact, fontSize:12")
-              appendLine("'12 hour clock' -> is12HourFormat:true")
-              appendLine("'dark background' -> backgroundHex:#070D14")
-              appendLine("'round corners' -> cornerRadius:24")
-          }
+      private fun buildSystemPrompt(): String {
+          val configKeys = """
+  accentColor: cyan|amber|green|white|red|purple
+  primaryHex: hex color e.g. #FF5500
+  backgroundHex: hex background e.g. #0D1117
+  fontSize: 10 to 24
+  fontWeight: light|normal|bold
+  cornerRadius: 0 to 32
+  cardStyle: glass|solid|outline|flat
+  compactMode: true|false
+  tabStyle: compact|normal
+  showPrayerTab: true|false
+  showAcademyTab: true|false
+  showStatusBar: true|false
+  animationsEnabled: true|false
+  notificationLevel: silent|normal|active
+  is12HourFormat: true|false""".trimIndent()
 
-          val aiPrompt = """
-  You are a UI configuration assistant for A.SYRIA app.
-  Translate the user request into a JSON array of UI changes.
-  Output ONLY a valid JSON array. No prose, no markdown.
+          return """
+  You are a UI configuration assistant for the A.SYRIA Sovereign OS app.
+  Translate the user's natural-language request into a JSON array of UI-change objects.
+  Output ONLY a valid JSON array — no prose, no markdown, no code fences.
 
-  Available keys:
-  $configKeys
+  Available configuration keys:
+  ${configKeys}
+
+  Each array element MUST have exactly these four fields:
+  {"key":"<config key>","value":"<new value>","label":"<Arabic — English>","preview":"<one-line description>"}
 
   Examples:
-  $examples
-
-  Each object: {"key":"...","value":"...","label":"...","preview":"..."}
-  label: short Arabic — English description
-  preview: one-line explanation of what changes
-
-  User request: "$userInput"
-
-  Output (JSON array only):
-          """.trimIndent()
-
-          return JSONObject().apply {
-              put("contents", JSONArray().apply {
-                  put(JSONObject().apply {
-                      put("role", "user")
-                      put("parts", JSONArray().apply {
-                          put(JSONObject().put("text", aiPrompt))
-                      })
-                  })
-              })
-              put("generationConfig", JSONObject().apply {
-                  put("maxOutputTokens", 1024)
-                  put("temperature", 0.05)
-              })
-          }.toString()
+  - 'green' -> [{"key":"accentColor","value":"green","label":"لون أخضر — Green Accent","preview":"Changes accent color to green"}]
+  - 'bigger text' -> [{"key":"fontSize","value":"18","label":"خط أكبر — Larger Font","preview":"Increases text size to 18sp"}]
+  - '12 hour clock' -> [{"key":"is12HourFormat","value":"true","label":"توقيت 12 ساعة — 12h Clock","preview":"Switches clock to AM/PM format"}]
+  - 'compact dark' -> [{"key":"compactMode","value":"true","label":"وضع مضغوط — Compact Mode","preview":"Enables compact layout"},{"key":"backgroundHex","value":"#070D14","label":"خلفية داكنة — Dark Background","preview":"Sets a very dark background"}]
+  """.trimIndent()
       }
 
       private fun parseAndValidateChanges(aiText: String): List<UIChange> {
@@ -185,7 +146,7 @@ package com.example.adaptive
 
                   UIChange(key = key, value = value, label = label, preview = preview)
               }
-          } catch (e: Exception) { emptyList() }
+          } catch (_: Exception) { emptyList() }
       }
   }
   

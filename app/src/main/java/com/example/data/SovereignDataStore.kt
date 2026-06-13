@@ -15,6 +15,7 @@ class SovereignDataStore(private val context: Context) {
         val OPERATOR_NAME = stringPreferencesKey("operator_name")
         val NEURAL_ROLE = stringPreferencesKey("neural_role")
         val GEMINI_API_KEY = stringPreferencesKey("gemini_api_key")
+        val GROQ_API_KEY   = stringPreferencesKey("groq_api_key")
         val PROJECT_NAME = stringPreferencesKey("project_name")
         val PROJECT_ID = stringPreferencesKey("project_id")
         val PROJECT_NUMBER = stringPreferencesKey("project_number")
@@ -39,6 +40,7 @@ class SovereignDataStore(private val context: Context) {
     val operatorName: Flow<String> = context.dataStore.data.map { it[OPERATOR_NAME] ?: "Sovereign_Operator" }
     val neuralRole: Flow<String> = context.dataStore.data.map { it[NEURAL_ROLE] ?: "Sovereign Node v4" }
     val geminiApiKey: Flow<String> = context.dataStore.data.map { it[GEMINI_API_KEY] ?: "" }
+    val groqApiKey: Flow<String>   = context.dataStore.data.map { it[GROQ_API_KEY]   ?: "" }
     val projectName: Flow<String> = context.dataStore.data.map { it[PROJECT_NAME] ?: "" }
     val projectId: Flow<String> = context.dataStore.data.map { it[PROJECT_ID] ?: "" }
     val projectNumber: Flow<String> = context.dataStore.data.map { it[PROJECT_NUMBER] ?: "" }
@@ -70,6 +72,10 @@ class SovereignDataStore(private val context: Context) {
 
     suspend fun saveGeminiApiKey(key: String) {
         context.dataStore.edit { it[GEMINI_API_KEY] = key }
+    }
+
+    suspend fun saveGroqApiKey(key: String) {
+        context.dataStore.edit { it[GROQ_API_KEY] = key }
     }
 
     suspend fun saveProjectName(name: String) {
