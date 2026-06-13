@@ -202,15 +202,16 @@ class MainActivity : FragmentActivity() {
                   }
               }
 
-              CompositionLocalProvider(LocalLayoutDirection provides if (isAr) LayoutDirection.Rtl else LayoutDirection.Ltr) {
-                Scaffold(
+              Scaffold(
                   modifier = Modifier.fillMaxSize(),
                   containerColor = VoidBlack,
                   contentWindowInsets = WindowInsets(0, 0, 0, 0),
                   bottomBar = {
-                    BottomNavBar(isAr, activeTab) { newTab ->
-                        activeTab = newTab
-                        vm.setSettingsOpen(newTab == "settings")
+                    CompositionLocalProvider(LocalLayoutDirection provides if (isAr) LayoutDirection.Rtl else LayoutDirection.Ltr) {
+                      BottomNavBar(isAr, activeTab) { newTab ->
+                          activeTab = newTab
+                          vm.setSettingsOpen(newTab == "settings")
+                      }
                     }
                   }
                 ) { innerPadding ->
@@ -232,7 +233,6 @@ class MainActivity : FragmentActivity() {
                     }
                   }
                 }
-              }
             }
             composable("link_scanner") { LinkScannerScreen(vm) { navController.popBackStack() } }
             composable("about") { AboutScreen { navController.popBackStack() } }
