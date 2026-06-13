@@ -45,7 +45,6 @@ fun SettingsScreen(
     val haptic = LocalHapticFeedback.current
     val isAr by viewModel.isArabic.collectAsState()
     val isStealth by viewModel.isStealthMode.collectAsState()
-    val isNeuralProxy by viewModel.isNeuralProxy.collectAsState()
     val apiKey by viewModel.customApiKey.collectAsState()
     val groqApiKey by viewModel.groqApiKey.collectAsState()
     val operatorName by viewModel.operatorName.collectAsState()
@@ -134,8 +133,6 @@ fun SettingsScreen(
                     // ── SECURITY ──────────────────────────────────────────────────────
                     SettingsCard(title = if (isAr) "الحماية والأمان" else "SECURITY CORE", icon = Icons.Default.Security, color = Color(0xFFFF4D6D), glowAlpha = borderGlow) {
                         SettingsToggleRow(label = if (isAr) "وضع التخفي" else "Stealth Mode", checked = isStealth, onCheckedChange = { viewModel.setStealthMode(it) }, icon = Icons.Default.VisibilityOff, color = Color(0xFFFF4D6D))
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color.White.copy(alpha = 0.06f))
-                        SettingsToggleRow(label = if (isAr) "بروكسي عصبي" else "Neural Proxy", checked = isNeuralProxy, onCheckedChange = { viewModel.setNeuralProxy(it) }, icon = Icons.Default.VpnKey, color = Color(0xFF00FF88))
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color.White.copy(alpha = 0.06f))
                         // Biometric lock button
                         Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(0xFFFF4D6D).copy(alpha = 0.07f)).border(1.dp, Color(0xFFFF4D6D).copy(alpha = 0.2f), RoundedCornerShape(10.dp)).clickable { haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); onLockRequest(if (isAr) "قفل الجلسة" else "Lock Session", if (isAr) "تأكيد الهوية لقفل التطبيق" else "Confirm identity to lock", {}) }.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
