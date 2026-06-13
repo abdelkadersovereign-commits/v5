@@ -498,7 +498,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch { dataStore.userProfileAnalysis.collect { _userProfileAnalysis.value = it } }
         // Mark data as loaded after critical fields are available
         viewModelScope.launch {
-            kotlinx.coroutines.flow.first(dataStore.onboardingCompleted)
+            dataStore.onboardingCompleted.first()
             _isDataLoaded.value = true
         }
         viewModelScope.launch(Dispatchers.IO) {
