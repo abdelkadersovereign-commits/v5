@@ -119,7 +119,7 @@ fun GroqChatScreen(
     }
 
     // Outer container with animated glowing border
-    Box(modifier = Modifier.fillMaxSize().drawBehind {
+    Box(modifier = Modifier.fillMaxSize().statusBarsPadding().drawBehind {
         val strokeWidth = 1.5.dp.toPx()
         val radius = 0f
         // Draw animated glow border
@@ -167,7 +167,7 @@ private fun ChatTopBar(onClear: () -> Unit, borderColor: Color, glowAlpha: Float
             Text("ONLINE", color = Color(0xFF00FF88).copy(alpha = 0.6f), fontSize = 8.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
         }
         Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("MASTER BRAIN", color = borderColor, fontSize = 13.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace, letterSpacing = 2.5.sp)
+            Text("المساعد الذكي", color = borderColor, fontSize = 13.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace, letterSpacing = 2.5.sp)
             Text("LLaMA 3.3 · Groq", color = borderColor.copy(alpha = 0.45f), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
         }
         Box(modifier = Modifier.align(Alignment.CenterEnd).size(34.dp).background(Color.White.copy(alpha = 0.04f), CircleShape).border(1.dp, borderColor.copy(alpha = 0.2f), CircleShape), contentAlignment = Alignment.Center) {
