@@ -188,7 +188,7 @@ class MainActivity : FragmentActivity() {
             }
             composable("dashboard") {
               val isAr by vm.isArabic.collectAsState()
-              var activeTab by remember { mutableStateOf("prayer") }
+              var activeTab by remember { mutableStateOf("home") }
 
               val isAcademyOpen by vm.isAcademyOpen.collectAsState()
               val isResourcesOpen by vm.isResourcesOpen.collectAsState()
@@ -214,7 +214,7 @@ class MainActivity : FragmentActivity() {
                     }
                   }
                 ) { innerPadding ->
-                  Box(modifier = Modifier.padding(innerPadding)) {
+                  Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
                     when (activeTab) {
                       "home" -> DashboardScreen(
                         viewModel = vm,
