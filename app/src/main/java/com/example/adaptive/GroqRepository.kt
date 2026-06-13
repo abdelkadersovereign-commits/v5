@@ -57,7 +57,8 @@ package com.example.adaptive
               put("messages", JSONArray().apply {
                   put(JSONObject().apply { put("role", "system"); put("content", systemPrompt) })
                   history.forEach { (role, content) ->
-                      put(JSONObject().apply { put("role", role); put("content", content) })
+                      val apiRole = if (role.trim() == "assistant") "assistant" else "user"
+                      put(JSONObject().apply { put("role", apiRole); put("content", content) })
                   }
               })
           }.toString()

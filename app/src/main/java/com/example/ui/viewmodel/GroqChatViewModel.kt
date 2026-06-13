@@ -59,6 +59,7 @@ package com.example.ui.viewmodel
 
                   val history = dao.getRecent(12)
                       .reversed()
+                      .filter { it.role == "user" || it.role == "assistant" }
                       .map { it.role to it.content }
 
                   val reply = groq.chat(
