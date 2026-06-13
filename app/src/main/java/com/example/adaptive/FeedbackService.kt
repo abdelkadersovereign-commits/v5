@@ -53,7 +53,7 @@ package com.example.adaptive
 
               // Sanitise: strip JSON-breaking chars, cap at 500 chars
               val sanitized = feedbackText
-                  .replace(Regex("[{}\[\]]"), "")
+                  .replace(Regex("[{}\\[\\]]"), "")
                   .take(500)
                   .trim()
 
@@ -128,7 +128,7 @@ package com.example.adaptive
 
       private fun parseAndValidateChanges(aiText: String): List<UIChange> {
           val cleaned = aiText
-              .replace(Regex("^```[a-z]*\n?", RegexOption.MULTILINE), "")
+              .replace(Regex("^```[a-z]*\\n?", RegexOption.MULTILINE), "")
               .replace("```", "")
               .trim()
 
