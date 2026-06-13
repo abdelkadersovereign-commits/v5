@@ -1753,7 +1753,7 @@ fun AmbientInsightCard(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "AMBIENT WISDOM STATION STATUS",
+                    text = if (insight.stateType == ContextualVerseEngine.AmbientStateType.CRITICAL) "تنبيه" else "حكمة اليوم",
                     color = stateColor,
                     fontSize = 8.5.sp,
                     fontWeight = FontWeight.ExtraBold,
@@ -1950,7 +1950,7 @@ fun StatusHeaderCell(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "A.SYRIA V4",
+                text = "A.SYRIA V5",
                 color = Color.White,
                 style = TextStyle(
                     shadow = androidx.compose.ui.graphics.Shadow(
@@ -1998,7 +1998,7 @@ fun StatusHeaderCell(
 
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "SYSTEM STATUS: SECURE",
+            text = "الحالة: آمن",
             color = CyberCyan,
             fontSize = 9.sp,
             fontWeight = FontWeight.Bold,
@@ -2036,7 +2036,7 @@ fun SovereignContextHub(
                 .padding(10.dp)
         ) {
             Text(
-                text = "NETWORK INTEL",
+                text = "الشبكة",
                 color = CyberCyan,
                 fontSize = 8.sp,
                 fontWeight = FontWeight.Bold,
@@ -2066,7 +2066,7 @@ fun SovereignContextHub(
                 .padding(10.dp)
         ) {
             Text(
-                text = "REACTOR core",
+                text = "البطارية",
                 color = AmberZen,
                 fontSize = 8.sp,
                 fontWeight = FontWeight.Bold,
@@ -2096,7 +2096,7 @@ fun SovereignContextHub(
                 .padding(10.dp)
         ) {
             Text(
-                text = "SYSTEM ENGINE",
+                text = "المحرك",
                 color = CyberCyan,
                 fontSize = 8.sp,
                 fontWeight = FontWeight.Bold,
@@ -2110,7 +2110,7 @@ fun SovereignContextHub(
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "SYS_ACTIVE",
+                text = "نشط",
                 color = Color.White.copy(alpha = 0.6f),
                 fontSize = 8.5.sp,
                 fontFamily = FontFamily.Monospace
@@ -2796,7 +2796,7 @@ fun CyberRankMetricBar(
         ) {
             Column {
                 Text(
-                    text = "CYBER RANK: [${rank.uppercase()}]",
+                    text = "رتبة الأمان: [${rank.uppercase()}]",
                     color = CyberCyan,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
@@ -2810,7 +2810,7 @@ fun CyberRankMetricBar(
                     )
                 )
                 Text(
-                    text = "ACTIVE TESTING PROTOCOL",
+                    text = "مسار التدريب الأمني",
                     color = Color.White.copy(alpha = 0.4f),
                     fontSize = 8.sp,
                     fontFamily = FontFamily.Monospace,
