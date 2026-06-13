@@ -203,6 +203,15 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch { dataStore.saveCyberScore(_cyberScore.value + points) }
     }
 
+
+    fun saveUserProfile(gender: String, birthYear: Int) {
+        viewModelScope.launch {
+            dataStore.saveUserGender(gender)
+            dataStore.saveUserBirthYear(birthYear)
+            dataStore.setProfileCompleted()
+        }
+    }
+
       fun completeOnboarding() {
           viewModelScope.launch { dataStore.setOnboardingCompleted() }
       }
@@ -294,6 +303,18 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
       private val _academyStreak = MutableStateFlow(0)
       val academyStreak: StateFlow<Int> = _academyStreak.asStateFlow()
+
+    // --- DataStore loaded indicator ---
+    private val _isDataLoaded = MutableStateFlow(false)
+    val isDataLoaded: StateFlow<Boolean> = _isDataLoaded.asStateFlow()
+
+    // --- User Profile ---
+    private val _userGender = MutableStateFlow("")
+    val userGender: StateFlow<String> = _userGender.asStateFlow()
+    private val _userBirthYear = MutableStateFlow(0)
+    val userBirthYear: StateFlow<Int> = _userBirthYear.asStateFlow()
+    private val _userProfileAnalysis = MutableStateFlow("")
+    val userProfileAnalysis: StateFlow<String> = _userProfileAnalysis.asStateFlow()
     // --- End User Cognitive Model State ---
 
     private val okHttpClient = OkHttpClient.Builder()
@@ -471,6 +492,15 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
           viewModelScope.launch { dataStore.academyPoints.collect { _academyPoints.value = it } }
           viewModelScope.launch { dataStore.academyStreak.collect { _academyStreak.value = it } }
 
+
+        viewModelScope.launch { dataStore.userGender.collect { _userGender.value = it } }
+        viewModelScope.launch { dataStore.userBirthYear.collect { _userBirthYear.value = it } }
+        viewModelScope.launch { dataStore.userProfileAnalysis.collect { _userProfileAnalysis.value = it } }
+        // Mark data as loaded after critical fields are available
+        viewModelScope.launch {
+            kotlinx.coroutines.flow.first(dataStore.onboardingCompleted)
+            _isDataLoaded.value = true
+        }
         viewModelScope.launch(Dispatchers.IO) {
             try { _ipAddress.value = fetchPublicIp() } catch (_: Exception) { _ipAddress.value = extractLocalIp() }
         }
