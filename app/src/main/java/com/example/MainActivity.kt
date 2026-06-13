@@ -209,7 +209,7 @@ class MainActivity : FragmentActivity() {
                                         Box(modifier = Modifier.padding(innerPadding)) {
                                             when (activeTab) {
                                                 "home"      -> DashboardScreen(vm, prayerVm, { navController.navigate("link_scanner") }, { t, s, ok -> triggerBiometricAuth(t, s, ok) })
-                                                "academy"   -> AcademyScreen(vm, { navController.navigate("glossary") }, { navController.navigate("checklist") })
+                                                "academy"   -> AcademyScreen(vm, onNavigateToGlossary = { navController.navigate("glossary") }, onNavigateToChecklist = { navController.navigate("checklist") })
                                                 "resources" -> ResourcesScreen(vm) { activeTab = "home" }
                                                 "chat"      -> GroqChatScreen(chatVm, uiConfig, isArLocal)
                                                 "settings"  -> SettingsScreen(vm, { activeTab = "home" }, { navController.navigate("about") }, { navController.navigate("adaptive_feedback") }) { t, s, ok -> triggerBiometricAuth(t, s, ok) }
