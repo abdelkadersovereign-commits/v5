@@ -11,48 +11,60 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.parallel=true"
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout source
+        uses: actions/checkout@v4
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
 
-    - name: Cache Gradle
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: gradle-
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            .gradle
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/libs.versions.toml') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
 
-    - name: Cache debug keystore
-      uses: actions/cache@v4
-      with:
-        path: ~/.android/debug.keystore
-        key: debug-keystore-v1
+      - name: Cache Android SDK components
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: android-debug-keystore-v2
 
-    - name: Generate Gradle Wrapper if Missing
-      run: |
-        if [ ! -f gradlew ]; then
-          gradle wrapper --gradle-version 8.7
-        fi
-        chmod +x gradlew
+      - name: Ensure Gradle Wrapper is executable
+        run: |
+          chmod +x gradlew
+          ./gradlew --version
 
-    - name: Display Gradle Version
-      run: ./gradlew --version
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --stacktrace --build-cache
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
 
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug --no-configuration-cache --stacktrace
-      env:
-        GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx4g"
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: A_SYRIA_V5_DEBUG
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+          if-no-files-found: error
 
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: A_SYRIA_V5_DEBUG
-        path: app/build/outputs/apk/debug/app-debug.apk
-        retention-days: 30
+      - name: Build Summary
+        if: success()
+        run: |
+          APK_SIZE=$(du -sh app/build/outputs/apk/debug/app-debug.apk | cut -f1)
+          echo "## ✅ Build Successful" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| APK Size | $APK_SIZE |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
