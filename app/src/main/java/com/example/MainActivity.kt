@@ -211,6 +211,7 @@ class MainActivity : FragmentActivity() {
                                                 "home"      -> DashboardScreen(vm, prayerVm, { navController.navigate("link_scanner") }, { t, s, ok -> triggerBiometricAuth(t, s, ok) })
                                                 "academy"   -> AcademyScreen(vm, onNavigateToGlossary = { navController.navigate("glossary") }, onNavigateToChecklist = { navController.navigate("checklist") })
                                                 "resources" -> ResourcesScreen(vm) { activeTab = "home" }
+                                                "library"   -> LibraryScreen(vm) { activeTab = "home" }
                                                 "chat"      -> GroqChatScreen(chatVm, uiConfig, isArLocal)
                                                 "settings"  -> SettingsScreen(vm, { activeTab = "home" }, { navController.navigate("about") }, { navController.navigate("adaptive_feedback") }) { t, s, ok -> triggerBiometricAuth(t, s, ok) }
                                             }
@@ -239,8 +240,8 @@ private fun AppBottomNavBar(isArabic: Boolean, activeTab: String, onTabSelected:
     val tabs = listOf(
         NavTab("home", "Home", "الرئيسية"),
         NavTab("academy", "Academy", "الأكاديمية"),
-        NavTab("chat", "AI Brain", "المخ"),
-        NavTab("resources", "Resources", "المصادر"),
+        NavTab("chat", "Chat", "الدردشة"),
+        NavTab("library", "Library", "المكتبة"),
         NavTab("settings", "Settings", "الإعدادات")
     )
 
@@ -259,6 +260,7 @@ private fun AppBottomNavBar(isArabic: Boolean, activeTab: String, onTabSelected:
                     "academy"   -> Icons.Rounded.School
                     "chat"      -> Icons.Rounded.SmartToy
                     "resources" -> Icons.Rounded.MenuBook
+                    "library"   -> Icons.Rounded.AutoStories
                     else        -> Icons.Rounded.Settings
                 }
                 val tabColor = when (tab.key) {
@@ -266,6 +268,7 @@ private fun AppBottomNavBar(isArabic: Boolean, activeTab: String, onTabSelected:
                     "academy"   -> Color(0xFF00FF88)
                     "chat"      -> Color(0xFFBB66FF)
                     "resources" -> AmberZen
+                    "library"   -> Color(0xFFAA77FF)
                     else        -> Color(0xFFFF6B35)
                 }
 
