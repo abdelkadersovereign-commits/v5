@@ -35,7 +35,7 @@ import com.example.ui.viewmodel.DashboardViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
-// ─── Data ────────────────────────────────────────────────────────────────────
+// ─── Data ───────────────────────────────────────────────────────────
 
 data class PrayerInfo(
     val key: String,
@@ -55,7 +55,7 @@ private val prayers = listOf(
 )
 
 private val endOfDayDuas = listOf(
-    "اللَّهُمَّ إِنِّي أَمْسَيْتُ أُشْهِدُكَ وَأُشْهِدُ حَمَلَةَ عَرْشِكَ، أَنَّكَ أَنْتَ اللَّهُ لَا إِلَهَ إِلَّا أَنْتَ وَحْدَكَ لَا شَرِيكَ لَكَ",
+    "اللَّهُمَّ إِنِّي أَمْسَيْتُ أُشْهِدُكَ وَأُشْهِدُ حَمَلَةَ عَرْشِكَ، أَنَّكَ أَنْتَ اللَّهُ لَا إِلَهَ إِلَّا أَنْتَ",
     "رَبَّنَا تَقَبَّلْ مِنَّا إِنَّكَ أَنْتَ السَّمِيعُ الْعَلِيمُ",
     "اللَّهُمَّ بَارِكْ لَنَا فِيمَا رَزَقْتَنَا، وَقِنَا عَذَابَ النَّارِ",
     "اللَّهُمَّ اجْعَلْنَا مِنَ الَّذِينَ يُقِيمُونَ الصَّلَاةَ وَيُؤْتُونَ الزَّكَاةَ وَهُمْ بِالْآخِرَةِ هُمْ يُوقِنُونَ"
@@ -66,7 +66,7 @@ private fun getTodayKey(): String =
 
 private const val PREFS_NAME = "prayer_points_sovereign"
 
-// ─── Main Screen ─────────────────────────────────────────────────────────────
+// ─── Main Screen ─────────────────────────────────────────────────────────
 
 @Composable
 fun PrayerPointsScreen(
@@ -143,7 +143,7 @@ fun PrayerPointsScreen(
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // ── Header ─────────────────────────────────────────────────────────
+            // ── Header ───────────────────────────────────────────────────────
             item {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                     Text("نقاط الصلاة", color = AmberZen, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
@@ -240,7 +240,7 @@ fun PrayerPointsScreen(
                 )
             }
 
-            // ── Encouragement ───────────────────────────────────────────────────
+            // ── Encouragement ──────────��────────────────────────────────────────
             item {
                 val remaining = 5 - completedCount
                 val message = when {
@@ -272,7 +272,7 @@ fun PrayerPointsScreen(
                         .padding(16.dp)
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                        Text("﴿ إِنَّ الصَّلَاةَ تَنْهَى عَنِ الْفَحْشَاءِ وَالْمُنكَرِ ﴾", color = AmberZen.copy(alpha = 0.9f), fontSize = 15.sp, lineHeight = 26.sp, textAlign = TextAlign.Center, fontWeight = FontWeight.Medium)
+                        Text("﴿ إِنَّ الصَّلَاةَ تَنْهَى عَنِ الْفَحْشَاءِ وَالْمُنكَرِ ﴾", color = AmberZen.copy(alpha = 0.9f), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                         Spacer(Modifier.height(4.dp))
                         Text("سورة العنكبوت — الآية 45", color = Color.White.copy(alpha = 0.3f), fontSize = 10.sp)
                     }
@@ -350,7 +350,7 @@ private fun PrayerCard(prayer: PrayerInfo, isDone: Boolean, pulseAlpha: Float, o
                 .background(if (isDone) prayer.color.copy(alpha = 0.2f) else Color.Transparent),
             contentAlignment = Alignment.Center
         ) {
-            AnimatedVisibility(visible = isDone, enter = scaleIn(), exit = scaleOut()) {
+            if (isDone) {
                 Text("✓", color = prayer.color, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
         }
