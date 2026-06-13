@@ -28,7 +28,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.*
-  import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -41,7 +41,7 @@ import androidx.work.*
 import com.example.worker.NotificationWorker
 import java.util.concurrent.TimeUnit
 import com.example.adaptive.LocalAdaptiveConfig
-  import com.example.ui.screens.* 
+import com.example.ui.screens.* 
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -188,7 +188,7 @@ class MainActivity : FragmentActivity() {
             }
             composable("dashboard") {
               val isAr by vm.isArabic.collectAsState()
-              var activeTab by remember { mutableStateOf("home") }
+              var activeTab by remember { mutableStateOf("prayer") }
 
               val isAcademyOpen by vm.isAcademyOpen.collectAsState()
               val isResourcesOpen by vm.isResourcesOpen.collectAsState()
@@ -250,7 +250,7 @@ class MainActivity : FragmentActivity() {
   }
 }
 
-// ─── Bottom Nav Data ──────────────────────────────────────────────────────────
+// ─── Bottom Nav Data ───────────────────────────────────────────────────────
 
 private data class NavTab(
     val key: String,
