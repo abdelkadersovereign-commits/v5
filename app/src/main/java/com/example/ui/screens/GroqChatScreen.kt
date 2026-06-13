@@ -72,6 +72,7 @@ package com.example.ui.screens
 
           if (messages.isEmpty() && !isTyping) {
               ChatEmptyState(
+                  modifier  = Modifier.weight(1f),
                   isArabic  = isArabic,
                   onPrompt  = { viewModel.sendMessage(it, uiConfig) }
               )
@@ -166,7 +167,7 @@ package com.example.ui.screens
   // ── Empty state ───────────────────────────────────────────────────────────────
 
   @Composable
-  private fun ChatEmptyState(isArabic: Boolean, onPrompt: (String) -> Unit) {
+  private fun ChatEmptyState(modifier: Modifier = Modifier, isArabic: Boolean, onPrompt: (String) -> Unit) {
       val suggestions = if (isArabic) listOf(
           "غيّر لون التطبيق إلى العنبر",
           "اجعل الواجهة أكثر إحكاماً",
@@ -178,8 +179,7 @@ package com.example.ui.screens
       )
 
       Column(
-          modifier = Modifier
-              .weight(1f)
+          modifier = modifier
               .fillMaxWidth()
               .padding(horizontal = 32.dp),
           horizontalAlignment = Alignment.CenterHorizontally,
